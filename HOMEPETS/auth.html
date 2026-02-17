@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">    
+<head>
+  <meta charset="UTF-8" />
+  <title>HomePets - Acceso</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="estilos.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body class="auth-body">
+  <main class="auth-page">
+    <header class="app-header auth-header">
+      <h1 class="app-title">HomePets</h1>
+      <p class="app-subtitle">Encuentra el mejor hogar para tu mascota</p>
+    </header>
+
+    <section class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Iniciar sesión</button>
+        <button class="auth-tab" data-tab="register">Registrarse</button>
+      </div>
+
+      <!-- LOGIN -->
+      <form id="form-login" class="auth-form visible">
+        <h2 class="auth-form-title">Bienvenido de nuevo</h2>
+
+        <label class="auth-label">
+          Correo electrónico
+          <input type="email" id="login-email" class="auth-input" placeholder="tu@correo.com" required />
+        </label>
+
+        <label class="auth-label" style="position:relative;">
+          Contraseña
+          <input type="password" id="login-password" class="auth-input" placeholder="••••••••" required style="padding-right:40px;" />
+          <span id="login-eye" class="password-eye" title="Mostrar contraseña">visibility_off</span>
+        </label>
+
+        <button type="submit" class="btn-primary auth-btn">Entrar</button>
+        <p class="auth-helper">
+          ¿No tienes cuenta? <span class="auth-link" data-go="register">Crear una cuenta</span>
+        </p>
+      </form>
+
+      <!-- REGISTRO -->
+      <form id="form-register" class="auth-form">
+        <h2 class="auth-form-title">Crear cuenta</h2>
+
+        <label class="auth-label">
+          Nombre completo
+          <input type="text" id="reg-name" class="auth-input" placeholder="Tu nombre" required />
+        </label>
+
+        <label class="auth-label">
+          Teléfono (WhatsApp)
+          <input type="tel" id="reg-telefono" class="auth-input" placeholder="Ej: 57 31787373111" />
+        </label>
+
+        <label class="auth-label">
+          Correo electrónico
+          <input type="email" id="reg-email" class="auth-input" placeholder="tu@correo.com" required />
+        </label>
+
+        <label class="auth-label" style="position:relative;">
+          Contraseña
+          <input type="password" id="reg-password" class="auth-input" placeholder="Mínimo 6 caracteres" required style="padding-right:40px;" />
+          <span id="reg-eye" class="password-eye" title="Mostrar contraseña">visibility_off</span>
+        </label>
+
+        <label class="auth-label" style="position:relative;">
+          Confirmar contraseña
+          <input type="password" id="reg-password2" class="auth-input" placeholder="Repite la contraseña" required style="padding-right:40px;" />
+          <span id="reg-eye2" class="password-eye" title="Mostrar contraseña">visibility_off</span>
+        </label>
+
+        <button type="submit" class="btn-primary auth-btn">Registrarme</button>
+        <p class="auth-helper">
+          ¿Ya tienes cuenta? <span class="auth-link" data-go="login">Inicia sesión</span>
+        </p>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    // API base URL (tu backend)
+    const API_BASE = 'http://127.0.0.1:8000';
+
+    // Si ya hay usuario logueado, ir a index
+    const usuarioActual = localStorage.getItem('usuarioActual');
+    if (usuarioActual) {
+      window.location.href = 'index.html';
+    }
+
+    // Tabs login/register
+    const tabs = document.querySelectorAll('.auth-tab');
+    const forms = {
+      login: document.getElementById('form-login'),
+      register: document.getElementById('form-register')
+    };
+
+    function showTab(tab) {
+      tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+      forms.login.classList.toggle('visible', tab === 'login');
+      forms.register.classList.toggle('visible', tab === 'register');
+    }
+
+    tabs.forEach(tab => tab.addEventListener('click', () => showTab(tab.dataset.tab)));
+    document.querySelectorAll('.auth-link').forEach(link => {
+      link.addEventListener('click', () => showTab(link.dataset.go));
+    });
+
+    // API helper
+    async function apiRequest(endpoint, options = {}) {
+      try {
+        const response = await fetch(`${API_BASE}${endpoint}`, {
+          headers: { 'Content-Type': 'application/json' },
+          ...options
+        });
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error.detail || 'Error en la API');
+        }
+        return await response.json();
+      } catch (error) {
+        console.error('API Error:', error);
+        throw error;
+      }
+    }
+
+    function setUsuarioActual(user) {
+      localStorage.setItem('usuarioActual', JSON.stringify({
+        id: user.id,
+        nombre: user.nombre,
+        email: user.email,
+        telefono: user.telefono || ''
+      }));
+    }
+
+    // REGISTRO → POST /usuarios/
+    document.getElementById('form-register').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nombre = document.getElementById('reg-name').value.trim();
+      const email = document.getElementById('reg-email').value.trim().toLowerCase();
+      const telefono = document.getElementById('reg-telefono').value.trim();
+      const pass = document.getElementById('reg-password').value;
+      const pass2 = document.getElementById('reg-password2').value;
+
+      if (!nombre || !email || !pass || !pass2) return alert('Completa todos los campos.');
+      if (pass.length < 6) return alert('Contraseña mínimo 6 caracteres.');
+      if (pass !== pass2) return alert('Contraseñas no coinciden.');
+
+      try {
+        const nuevoUsuario = await apiRequest('/usuarios/', {
+          method: 'POST',
+          body: JSON.stringify({ nombre, email, telefono, password: pass })
+        });
+        setUsuarioActual(nuevoUsuario);
+        alert(`¡Bienvenido ${nuevoUsuario.nombre}!`);
+        window.location.href = 'index.html';
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+      }
+    });
+
+    // LOGIN → POST /usuarios/login REAL con validación password
+    document.getElementById('form-login').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value.trim().toLowerCase();
+      const pass = document.getElementById('login-password').value;
+
+      if (!email || !pass) return alert('Completa todos los campos.');
+
+      try {
+        const response = await apiRequest('/usuarios/login', {
+          method: 'POST',
+          body: JSON.stringify({ email, password: pass })
+        });
+        setUsuarioActual(response.user);
+        alert(`¡Bienvenido ${response.user.nombre}!`);
+        window.location.href = 'index.html';
+      } catch (error) {
+        alert(`Error: ${error.message}`);  // Muestra "Credenciales inválidas"
+      }
+    });
+
+    // OJITOS toggle password (×3)
+    function togglePassword(inputId, eyeId) {
+      const input = document.getElementById(inputId);
+      const eye = document.getElementById(eyeId);
+      eye.addEventListener('click', () => {
+        const isPassword = input.type === 'password';
+        input.type = isPassword ? 'text' : 'password';
+        eye.textContent = isPassword ? 'visibility' : 'visibility_off';
+        eye.style.color = isPassword ? '#1976d2' : '#666';
+      });
+    }
+    togglePassword('login-password', 'login-eye');
+    togglePassword('reg-password', 'reg-eye');
+    togglePassword('reg-password2', 'reg-eye2');
+  </script>
+
+  <style>
+    .password-eye {
+      position: absolute;
+      right: 12px;
+      top: 18px;
+      cursor: pointer;
+      font-family: 'Material Icons';
+      font-size: 20px;
+      color: #666;
+      user-select: none;
+      z-index: 10;
+    }
+    .password-eye:hover { color: #1976d2 !important; }
+    .auth-label { position: relative; display: block; margin-bottom: 16px; }
+  </style>
+</body>
+</html>

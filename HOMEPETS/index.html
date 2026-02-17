@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>HuellaHome - Cuidado amoroso para tu mascota</title>
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <main class="page">
+    <!-- Header -->
+
+    <!----------------- botón salir ------------------------------------->
+    <button id="btn-logout" class="logout-btn">Salir</button>
+
+    <!----------------- botón logo huella de perro ---------------------->
+    <header class="app-header">
+      <div class="logo-wrap">
+        <div class="logo-icon">🐾</div>
+        <span class="app-title">HomePets</span>
+      </div>
+
+      <!-- Botón perfil de usuario -->
+      <button id="btn-perfil-usuario" class="profile-btn" aria-label="Perfil de usuario">
+        <img src="img/usuario1.jpg"
+             alt="Perfil de usuario"
+             class="profile-img"
+             id="header-profile-img">
+      </button>
+    </header>
+
+    <!-- Buscador -->
+    <section style="margin-bottom:24px;">
+      <input id="input-busqueda-ciudad"
+             class="input-pill"
+             type="text"
+             placeholder="¿Dónde quieres dejar a tu mascota?">
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="chip chip-ghost" id="btn-location">📍 Ubicación</button>
+        <button class="chip chip-ghost" id="btn-dates">📅 Fechas</button>
+        <button class="chip chip-ghost" id="btn-pet">🐶 Mascotas</button>
+      </div>
+    </section>
+
+    <!----------------- Modal calendario -------------->
+    <div class="calendar-overlay" id="calendar-modal">
+      <div class="calendar-box">
+        <div class="calendar-header">
+          <button class="calendar-nav" id="prev-month">‹</button>
+          <span id="calendar-title">Disponibilidad</span>
+          <button class="calendar-nav" id="next-month">›</button>
+        </div>
+
+        <div class="calendar-grid" id="calendar-grid">
+          <!-- JS genera días -->
+        </div>
+
+        <p class="calendar-legend">
+          Todos los días en verde tienen disponibilidad.
+        </p>
+      </div>
+    </div>
+
+    <!-- Modal lista de mascotas -->
+    <div class="calendar-overlay" id="pets-modal">
+      <div class="calendar-box">
+        <div class="calendar-header">
+          <span>Mascotas guardadas</span>
+          <button class="calendar-close" id="pets-close">✕</button>
+        </div>
+        <div id="pets-list"></div>
+      </div>
+    </div>
+
+    <!-- Anfitriones destacados -->
+    <section style="margin-bottom:24px;">
+      <h2 style="font-size:1.2rem;margin-bottom:12px;">CEO'S (Anfitriones)</h2>
+      <div style="display:flex;gap:14px;overflow-x:auto;padding-bottom:8px;">
+
+        <article class="card" style="min-width:220px;background:#ffe8c1;">
+          <img src="img/FOTO_NATA.jpg" alt="Foto de Natalia" class="card-img">
+          <div style="padding:12px 14px 14px;">
+            <h3 style="font-size:1rem;margin-bottom:4px;">Natalia Muñoz</h3>
+            <p style="margin:0 6px;font-size:0.9rem;color:var(--muted);">
+              Psicologa Magister (ICESI)
+            </p>
+          </div>
+        </article>
+
+        <article class="card" style="min-width:220px;background:#ffe8c1;">
+          <img src="img/FOTO_PIPE.jpg" alt="Foto de Felipe" class="card-img">
+          <div style="padding:12px 14px 14px;">
+            <h3 style="font-size:1rem;margin-bottom:4px;">Felipe Romero</h3>
+            <p style="margin:0 6px;font-size:0.9rem;color:var(--muted);">
+              Medico Veterinario Zootecnista (Universidad de Caldas)
+            </p>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- Anfitriones de la comunidad -->
+    <section style="margin-bottom:24px;">
+      <h2 style="font-size:1.1rem;margin-bottom:12px;">Anfitriones de la comunidad</h2>
+      <div id="host-list" style="display:flex;gap:14px;overflow-x:auto;padding-bottom:8px;"></div>
+    </section>
+
+    <!-- Botón + debajo de anfitriones -->
+    <div class="fab-wrap">
+      <button class="fab" id="btn-add-pet" aria-label="Agregar">
+        +
+      </button>
+    </div>
+
+  </main>
+
+  <!-- Boton de Publicar mi hogar -->
+  <button class="btn-primary"
+          style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);max-width:380px;"
+          id="btn-publicar">
+    Publicar mi hogar
+  </button>
+
+  <!--------------------------------------Script------------------------------------------------->
+  <script>
+    // Botón perfil de usuario -> perfil-usuario.html
+    const btnPerfilUsuario = document.getElementById('btn-perfil-usuario');
+    if (btnPerfilUsuario) {
+      btnPerfilUsuario.addEventListener('click', () => {
+        window.location.href = 'perfil-usuario.html';
+      });
+    }
+
+    // Funcion para el boton (salir)
+    const btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) {
+      btnLogout.addEventListener('click', () => {
+        localStorage.removeItem('usuarioActual');
+        window.location.href = 'auth.html';
+      });
+    }
+
+    (function () {
+      const protegido = true;
+      if (!protegido) return;
+
+      try {
+        const usuario = localStorage.getItem('usuarioActual');
+        if (!usuario) {
+          window.location.href = 'auth.html';
+        }
+      } catch (e) {
+        window.location.href = 'auth.html';
+      }
+    })();
+
+    // Saber si el usuario actual es admin
+    let esAdmin = false;
+    try {
+      const rawUser = localStorage.getItem('usuarioActual');
+      if (rawUser) {
+        const user = JSON.parse(rawUser);
+        esAdmin = user.email === 'cristian35520@outlook.com';
+      }
+    } catch (e) {
+      esAdmin = false;
+    }
+
+    // Cambiar foto del botón de perfil según usuarioActual
+    const headerProfileImg = document.getElementById('header-profile-img');
+    try {
+      const rawUserHeader = localStorage.getItem('usuarioActual');
+      if (rawUserHeader && headerProfileImg) {
+        const userHeader = JSON.parse(rawUserHeader);
+        if (userHeader.fotoUser) {
+          headerProfileImg.src = userHeader.fotoUser;
+        }
+      }
+    } catch (e) {
+      // se deja el avatar por defecto
+    }
+
+    // Botón verde (+)
+    const btnAddPet = document.getElementById('btn-add-pet');
+    if (btnAddPet) {
+      btnAddPet.addEventListener('click', () => {
+        window.location.href = 'perfil-mascota.html';
+      });
+    }
+
+    // Ubicación en Google Maps
+    const btnLocation = document.getElementById('btn-location');
+    if (btnLocation) {
+      btnLocation.addEventListener('click', () => {
+        window.open('https://maps.app.goo.gl/dhPHwZme4RGVnD187', '_blank');
+      });
+    }
+
+    // -------------------------- Calendario estilo modal ----------------------------------
+    const btnDates = document.getElementById('btn-dates');
+    const calendarModal = document.getElementById('calendar-modal');
+    const calendarGrid = document.getElementById('calendar-grid');
+    const calendarTitle = document.getElementById('calendar-title');
+    const prevMonthBtn = document.getElementById('prev-month');
+    const nextMonthBtn = document.getElementById('next-month');
+
+    const monthNames = [
+      'enero','febrero','marzo','abril','mayo','junio',
+      'julio','agosto','septiembre','octubre','noviembre','diciembre'
+    ];
+
+    let current = new Date();
+    let startDate = null;
+    let endDate = null;
+
+    function paintRange() {
+      const dayNodes = calendarGrid.querySelectorAll('.calendar-day');
+      dayNodes.forEach(node => {
+        node.classList.remove('selected-start', 'selected-end', 'in-range');
+        const d = Number(node.dataset.day);
+        if (startDate && d === startDate) {
+          node.classList.add('selected-start');
+        }
+        if (endDate && d === endDate) {
+          node.classList.add('selected-end');
+        }
+        if (startDate && endDate && d > startDate && d < endDate) {
+          node.classList.add('in-range');
+        }
+      });
+    }
+
+    function renderCalendar(date) {
+      const year = date.getFullYear();
+      const month = date.getMonth();
+
+      calendarTitle.textContent =
+        `Disponibilidad ${monthNames[month]} ${year}`;
+
+      calendarGrid.innerHTML = '';
+
+      const weekdays = ['Lu','Ma','Mi','Ju','Vi','Sa','Do'];
+      weekdays.forEach(d => {
+        const span = document.createElement('span');
+        span.textContent = d;
+        span.className = 'calendar-weekday';
+        calendarGrid.appendChild(span);
+      });
+
+      const firstDay = new Date(year, month, 1);
+      const startWeekday = (firstDay.getDay() + 6) % 7;
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      for (let i = 0; i < startWeekday; i++) {
+        const empty = document.createElement('span');
+        calendarGrid.appendChild(empty);
+      }
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const daySpan = document.createElement('span');
+        daySpan.textContent = d;
+        daySpan.className = 'calendar-day available';
+        daySpan.dataset.day = d;
+
+        daySpan.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const clickedDay = Number(daySpan.dataset.day);
+
+          if (!startDate || (startDate && endDate)) {
+            startDate = clickedDay;
+            endDate = null;
+          } else if (!endDate) {
+            if (clickedDay < startDate) {
+              endDate = startDate;
+              startDate = clickedDay;
+            } else {
+              endDate = clickedDay;
+            }
+          } else {
+            startDate = clickedDay;
+            endDate = null;
+          }
+
+          paintRange();
+        });
+
+        calendarGrid.appendChild(daySpan);
+      }
+
+      paintRange();
+    }
+
+    if (btnDates && calendarModal && calendarGrid && calendarTitle) {
+      btnDates.addEventListener('click', () => {
+        calendarModal.style.display = 'flex';
+        renderCalendar(current);
+      });
+
+      if (prevMonthBtn) {
+        prevMonthBtn.addEventListener('click', () => {
+          current.setMonth(current.getMonth() - 1);
+          startDate = null;
+          endDate = null;
+          renderCalendar(current);
+        });
+      }
+      if (nextMonthBtn) {
+        nextMonthBtn.addEventListener('click', () => {
+          current.setMonth(current.getMonth() + 1);
+          startDate = null;
+          endDate = null;
+          renderCalendar(current);
+        });
+      }
+
+      calendarModal.addEventListener('click', (e) => {
+        if (e.target === calendarModal) {
+          calendarModal.style.display = 'none';
+        }
+      });
+    }
+    // -------------------------- Fin calendario ----------------------------------------
+
+    // -------------------------- Botón "Publicar mi hogar" -> perfil anfitrión ----------
+    const btnPublicar = document.getElementById('btn-publicar');
+    if (btnPublicar) {
+      btnPublicar.addEventListener('click', () => {
+        window.location.href = 'perfil-anfitrion.html';
+      });
+    }
+
+    // -------------------------- Lista de mascotas --------------------------------------
+    const btnPet   = document.getElementById('btn-pet');
+    const petsModal = document.getElementById('pets-modal');
+    const petsClose = document.getElementById('pets-close');
+    const petsList  = document.getElementById('pets-list');
+
+    function renderPets() {
+      const data = JSON.parse(localStorage.getItem('mascotas') || '[]');
+      if (!petsList) return;
+
+      if (data.length === 0) {
+        petsList.innerHTML = '<p>No hay mascotas guardadas todavía.</p>';
+        return;
+      }
+
+      petsList.innerHTML = '';
+
+      data.forEach((pet, index) => {
+        const foto = pet.foto || 'img/registro-mascotas.png';
+
+        const div = document.createElement('div');
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.gap = '10px';
+        div.style.padding = '8px 0';
+        div.style.borderBottom = '1px solid #eee';
+
+        div.innerHTML = `
+          <div class="pet-row-main"
+               data-index="${index}"
+               style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer;">
+            <div style="width:48px;height:48px;border-radius:50%;overflow:hidden;background:#f6e0b8;flex-shrink:0;">
+              <img src="${foto}" alt="Foto mascota" style="width:100%;height:100%;object-fit:cover;">
+            </div>
+            <div style="flex:1;">
+              <strong>${pet.nombre || 'Sin nombre'}</strong><br>
+              <small style="color:#666;">
+                ${(pet.raza || '').trim()}${pet.raza && pet.edad ? ' · ' : ''}${(pet.edad || '').trim()}
+              </small>
+            </div>
+          </div>
+          ${esAdmin ? `
+          <button class="btn-delete-pet"
+                  data-index="${index}"
+                  style="border:none;background:transparent;color:#b33;font-size:1.1rem;cursor:pointer;">
+            🗑
+          </button>` : ''}
+        `;
+        petsList.appendChild(div);
+      });
+
+      // Abrir detalle de mascota
+      const rows = petsList.querySelectorAll('.pet-row-main');
+      rows.forEach(row => {
+        row.addEventListener('click', () => {
+          const idx = Number(row.dataset.index);
+          localStorage.setItem('mascotaSeleccionada', String(idx));
+          window.location.href = 'detalle-mascota.html';
+        });
+      });
+
+      // Solo los admin tienen botones de borrar
+      if (esAdmin) {
+        const deleteButtons = petsList.querySelectorAll('.btn-delete-pet');
+        deleteButtons.forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const idx = Number(btn.dataset.index);
+            const mascotas = JSON.parse(localStorage.getItem('mascotas') || '[]');
+
+            if (idx >= 0 && idx < mascotas.length) {
+              if (!confirm(`¿Eliminar la mascota "${mascotas[idx].nombre || ''}"?`)) return;
+
+              mascotas.splice(idx, 1);
+              localStorage.setItem('mascotas', JSON.stringify(mascotas));
+              renderPets();
+            }
+          });
+        });
+      }
+    }
+
+    if (btnPet && petsModal && petsList && petsClose) {
+      btnPet.addEventListener('click', () => {
+        renderPets();
+        petsModal.style.display = 'flex';
+      });
+
+      petsClose.addEventListener('click', () => {
+        petsModal.style.display = 'none';
+      });
+
+      petsModal.addEventListener('click', (e) => {
+        if (e.target === petsModal) {
+          petsModal.style.display = 'none';
+        }
+      });
+    }
+
+    // -------------------------- Anfitriones de la comunidad + buscador --------------------------------------
+    const hostList = document.getElementById('host-list');
+    const inputBusquedaCiudad = document.getElementById('input-busqueda-ciudad');
+
+    function renderHosts(filtroCiudad = '') {
+      if (!hostList) return;
+      const data = JSON.parse(localStorage.getItem('anfitriones') || '[]');
+
+      const filtro = (filtroCiudad || '').trim().toLowerCase();
+
+      const dataFiltrada = filtro
+        ? data.filter(host => {
+            const dir = (host.direccion || '').toLowerCase();
+            return dir.includes(filtro);
+          })
+        : data;
+
+      if (dataFiltrada.length === 0) {
+        hostList.innerHTML =
+          '<p style="font-size:0.9rem;color:var(--muted);">No se encontraron anfitriones para esa ubicación.</p>';
+        return;
+      }
+
+      hostList.innerHTML = '';
+      dataFiltrada.forEach((host, indexFiltrado) => {
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.style.minWidth = '220px';
+        card.style.background = '#ffe8c1';
+
+        const foto = host.foto || 'img/anfitrion.jpg';
+
+        card.innerHTML = `
+          <img src="${foto}" alt="Foto anfitrión" class="card-img">
+          <div style="padding:12px 14px 14px;">
+            <h3 style="font-size:1rem;margin-bottom:4px;">${host.nombre || 'Anfitrión sin nombre'}</h3>
+            <p style="margin:0 0 4px;font-size:0.85rem;color:var(--muted);">
+              ${host.alojamiento || ''} · ${host.mascotas || ''}
+            </p>
+            <p style="margin:0;font-size:0.8rem;color:var(--muted);">
+              ${host.direccion || ''}
+            </p>
+          </div>
+        `;
+
+        // Índice real en el array completo para detalle
+        const idxReal = data.findIndex(h =>
+          h.nombre === host.nombre &&
+          h.direccion === host.direccion &&
+          h.celular === host.celular
+        );
+
+        card.addEventListener('click', () => {
+          const idx = idxReal !== -1 ? idxReal : indexFiltrado;
+          localStorage.setItem('anfitrionSeleccionado', String(idx));
+          window.location.href = 'detalle-anfitrion.html';
+        });
+
+        hostList.appendChild(card);
+      });
+    }
+
+    // primera carga: sin filtro
+    renderHosts();
+
+    // cuando el usuario escribe y presiona Enter, filtrar
+    if (inputBusquedaCiudad) {
+      inputBusquedaCiudad.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          renderHosts(inputBusquedaCiudad.value);
+        }
+      });
+
+      // opcional: limpiar filtro al borrar texto
+      inputBusquedaCiudad.addEventListener('input', () => {
+        const valor = inputBusquedaCiudad.value;
+        if (!valor) {
+          renderHosts('');
+        }
+      });
+    }
+    // -------------------------- Fin script --------------------------------------
+  </script>
+
+  <script>
+    (function () {
+      const protegido = true;
+
+      if (!protegido) return;
+
+      try {
+        const usuario = localStorage.getItem('usuarioActual');
+        if (!usuario) {
+          window.location.href = 'auth.html';
+        }
+      } catch (e) {
+        window.location.href = 'auth.html';
+      }
+    })();
+  </script>
+</body>
+</html>

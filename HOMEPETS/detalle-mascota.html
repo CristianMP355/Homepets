@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>HuellaHome - Detalle mascota</title>
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <main class="page">
+    <header class="app-header">
+      <button class="back-btn" onclick="window.location.href='index.html'">←</button>
+      <span class="app-title">Detalle mascota</span>
+      <span></span>
+    </header>
+
+    <section id="pet-detail"></section>
+  </main>
+
+  <script>
+    const container = document.getElementById('pet-detail');
+    const rawIndex = localStorage.getItem('mascotaSeleccionada');
+    const petIndex = rawIndex !== null ? Number(rawIndex) : -1;
+
+    function renderPetDetail() {
+      if (!container) return;
+
+      const data = JSON.parse(localStorage.getItem('mascotas') || '[]');
+      const pet = data[petIndex];
+
+      if (!pet) {
+        container.innerHTML = '<p>No se encontró la información de la mascota.</p>';
+        return;
+      }
+
+      const foto = pet.foto || 'img/registro-mascotas.png';
+
+      const responsable = pet.responsable || {};
+      const responsableNombre = responsable.nombre || 'No registrado';
+      const responsableEmail  = responsable.email || '';
+      let   responsableTelefono = responsable.telefono || '';
+
+      // Si el usuario actual coincide con el responsable, usar su teléfono actualizado
+      try {
+        const rawUser = localStorage.getItem('usuarioActual');
+        if (rawUser) {
+          const user = JSON.parse(rawUser);
+          if (user.email && user.email === responsableEmail && user.telefono) {
+            responsableTelefono = user.telefono;
+          }
+        }
+      } catch (e) {
+        // si algo falla, se mantiene el teléfono guardado en la mascota
+      }
+
+      container.innerHTML = `
+        <section style="margin-bottom:16px;text-align:center;">
+          </static/img src="${foto}" alt="Foto mascota"
+               style="border-radius:50%;max-width:220px;height:220px;object-fit:cover;box-shadow:0 10px 25px rgba(0,0,0,0.12);">
+        </section>
+
+        <section class="host-section">
+          <div class="host-section-header">
+            <span>${pet.nombre || 'Sin nombre'}</span>
+          </div>
+          <p class="host-section-text">
+            <strong>Raza:</strong> ${pet.raza || 'No registrada.'}<br>
+            <strong>Edad:</strong> ${pet.edad || 'No registrada.'}
+          </p>
+        </section>
+
+        <section class="host-section">
+          <div class="host-section-header">
+            <span>Salud y convivencia</span>
+          </div>
+          <p class="host-section-text">
+            <strong>Vacunas:</strong> ${pet.vacunas || 'No registradas.'}<br>
+            ${pet.convive ? 'Convive con otras mascotas.' : 'No convive con otras mascotas o no registrado.'}
+          </p>
+        </section>
+
+        <section class="host-section">
+          <div class="host-section-header">
+            <span>Notas de comportamiento</span>
+          </div>
+          <p class="host-section-text">
+            ${pet.notas || 'No se han agregado notas de comportamiento.'}
+          </p>
+        </section>
+
+        <section class="host-section">
+          <div class="host-section-header">
+            <span>Responsable de la mascota</span>
+          </div>
+          <p class="host-section-text">
+            <strong>Nombre:</strong> ${responsableNombre}<br>
+            <strong>Correo:</strong> ${responsableEmail || 'No registrado'}<br>
+            <strong>Teléfono:</strong> ${responsableTelefono || 'No registrado'}
+          </p>
+        </section>
+
+        <section class="host-section" style="text-align:center;">
+          <button id="btn-contactar-responsable"
+                  class="btn-primary"
+                  style="padding:10px 24px;border-radius:999px;margin-bottom:8px;">
+            Contactar por correo
+          </button>
+          <button id="btn-whatsapp-responsable"
+                  class="btn-primary"
+                  style="padding:10px 24px;border-radius:999px;background:#25D366;">
+            WhatsApp
+          </button>
+        </section>
+      `;
+
+      const btnCorreo   = document.getElementById('btn-contactar-responsable');
+      const btnWhatsapp = document.getElementById('btn-whatsapp-responsable');
+
+      // Correo
+      if (btnCorreo && responsableEmail) {
+        btnCorreo.addEventListener('click', () => {
+          const asunto = encodeURIComponent(`Consulta sobre ${pet.nombre || 'tu mascota en HuellaHome'}`);
+          const cuerpo = encodeURIComponent(
+            `Hola ${responsableNombre || ''},\n\n` +
+            `Vi la ficha de ${pet.nombre || 'tu mascota'} en HuellaHome y me gustaría saber más sobre su cuidado y disponibilidad.\n\n` +
+            `Quedo pendiente.`
+          );
+          const mailtoUrl = `mailto:${responsableEmail}?subject=${asunto}&body=${cuerpo}`;
+          window.location.href = mailtoUrl;
+        });
+      } else if (btnCorreo && !responsableEmail) {
+        btnCorreo.addEventListener('click', () => {
+          alert('No hay un correo de contacto registrado para esta mascota.');
+        });
+      }
+
+      // WhatsApp
+      if (btnWhatsapp && responsableTelefono) {
+        btnWhatsapp.addEventListener('click', () => {
+          const numero = responsableTelefono.replace(/[^0-9]/g, '');
+          const mensaje = encodeURIComponent(
+            `Hola ${responsableNombre || ''}, vi la ficha de ${pet.nombre || 'tu mascota'} en HuellaHome y me gustaría hablar contigo.`
+          );
+          const waUrl = `https://wa.me/${numero}?text=${mensaje}`;
+          window.open(waUrl, '_blank');
+        });
+      } else if (btnWhatsapp && !responsableTelefono) {
+        btnWhatsapp.addEventListener('click', () => {
+          alert('No hay un teléfono de WhatsApp registrado para esta mascota.');
+        });
+      }
+    }
+
+    renderPetDetail();
+  </script>
+</body>
+</html>
