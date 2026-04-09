@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>HuellaHome - Perfil de usuario</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/static/estilos.css">
+  <style>
+    .user-avatar {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+      overflow: hidden;
+    }
+
+    .user-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .user-name-title {
+      text-align: center;
+      font-size: 1.1rem;
+      margin-bottom: 4px;
+    }
+
+    .user-email-subtitle {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #777;
+      margin-bottom: 18px;
+    }
+
+    .user-form-label {
+      display: block;
+      font-size: 0.9rem;
+      margin: 10px 0 4px;
+      color: var(--brown);
+    }
+
+    .user-form-input {
+      width: 100%;
+    }
+  </style>
+</head>
+<body class="auth-body">
+  <main class="auth-page">
+    <header class="app-header auth-header">
+      <button class="back-btn" onclick="window.location.href='/'">←</button>
+      <h1 class="app-title">Mi perfil</h1>
+      <span></span>
+    </header>
+
+    <section class="auth-card">
+      <div style="text-align:center;margin-bottom:16px;">
+        <div class="user-avatar">
+          <img src="/static/img/avatar-default.png" alt="Foto de perfil" id="user-avatar-img">
+        </div>
+        <button class="edit-avatar-btn" id="btn-change-user-photo" type="button">✎</button>
+        <input type="file" id="user-photo-input" accept="image/*" style="display:none;">
+
+        <h2 class="user-name-title" id="perfil-nombre-header">Usuario HuellaHome</h2>
+        <p class="user-email-subtitle" id="perfil-email-header"></p>
+      </div>
+
+      <form id="form-perfil-usuario" class="auth-form visible">
+        <label class="user-form-label">
+          Nombre completo
+          <input type="text" id="perfil-nombre" class="auth-input user-form-input" required />
+        </label>
+
+        <label class="user-form-label">
+          Correo electrónico
+          <input type="email" id="perfil-email" class="auth-input user-form-input" required />
+        </label>
+
+        <label class="user-form-label">
+          Teléfono (WhatsApp)
+          <input type="tel" id="perfil-telefono" class="auth-input user-form-input" required />
+        </label>
+
+        <label class="user-form-label">
+          Dirección de residencia
+          <input type="text" id="perfil-direccion" class="auth-input user-form-input" />
+        </label>
+
+        <button type="submit" class="btn-primary auth-btn" style="margin-top:16px;">
+          Guardar cambios
+        </button>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:8000";
+
+    function getUsuarioActual() {
+      try {
+        return JSON.parse(localStorage.getItem("usuarioActual"));
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function setUsuarioActual(user) {
+      localStorage.setItem("usuarioActual", JSON.stringify({
+        id: user.id,
+        nombre: user.nombre,
+        email: user.email,
+        telefono: user.telefono || "",
+        direccion: user.direccion || "",
+        rol: user.rol || "",
+        foto_user: user.foto_user || null
+      }));
+    }
+
+    const userAvatarImg = document.getElementById("user-avatar-img");
+    const btnChangeUserPhoto = document.getElementById("btn-change-user-photo");
+    const userPhotoInput = document.getElementById("user-photo-input");
+    const nombreHeader = document.getElementById("perfil-nombre-header");
+    const emailHeader = document.getElementById("perfil-email-header");
+    const inputNombre = document.getElementById("perfil-nombre");
+    const inputEmail = document.getElementById("perfil-email");
+    const inputTelefono = document.getElementById("perfil-telefono");
+    const inputDireccion = document.getElementById("perfil-direccion");
+    const formPerfil = document.getElementById("form-perfil-usuario");
+
+    let selectedPhotoFile = null;
+    let usuarioActual = getUsuarioActual();
+
+    (function protegerPagina() {
+      if (!usuarioActual || !usuarioActual.id) {
+        window.location.href = "/auth";
+      }
+    })();
+
+    async function cargarPerfilUsuario() {
+      try {
+        const response = await fetch(`${API_BASE}/usuarios/${usuarioActual.id}`);
+        const usuario = await response.json();
+
+        if (!response.ok) {
+          alert(usuario.detail || "No se pudo cargar el perfil");
+          return;
+        }
+
+        inputNombre.value = usuario.nombre || "";
+        inputEmail.value = usuario.email || "";
+        inputTelefono.value = usuario.telefono || "";
+        inputDireccion.value = usuario.direccion || "";
+
+        nombreHeader.textContent = usuario.nombre || "Usuario HuellaHome";
+        emailHeader.textContent = usuario.email || "";
+
+        if (usuario.foto_user) {
+          userAvatarImg.src = usuario.foto_user;
+        }
+
+        setUsuarioActual(usuario);
+        usuarioActual = usuario;
+      } catch (error) {
+        console.error("Error cargando perfil:", error);
+        alert("Error al cargar el perfil del usuario");
+      }
+    }
+
+    if (btnChangeUserPhoto && userPhotoInput) {
+      btnChangeUserPhoto.addEventListener("click", () => {
+        userPhotoInput.click();
+      });
+
+      userPhotoInput.addEventListener("change", () => {
+        const file = userPhotoInput.files && userPhotoInput.files[0];
+        if (!file) return;
+
+        if (!file.type.startsWith("image/")) {
+          alert("Debes seleccionar una imagen válida.");
+          userPhotoInput.value = "";
+          selectedPhotoFile = null;
+          return;
+        }
+
+        selectedPhotoFile = file;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          userAvatarImg.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    if (formPerfil) {
+      formPerfil.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const nombre = inputNombre.value.trim();
+        const email = inputEmail.value.trim().toLowerCase();
+        const telefono = inputTelefono.value.trim();
+        const direccion = inputDireccion.value.trim();
+        const token = localStorage.getItem("access_token");
+
+        if (!nombre || !email || !telefono) {
+          alert("Por favor completa nombre, correo y teléfono.");
+          return;
+        }
+
+        try {
+          const formData = new FormData();
+          formData.append("nombre", nombre);
+          formData.append("email", email);
+          formData.append("telefono", telefono);
+          formData.append("direccion", direccion);
+
+          if (selectedPhotoFile) {
+            formData.append("foto_user", selectedPhotoFile);
+          }
+
+          const headers = {};
+          if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+          }
+
+          const response = await fetch(`${API_BASE}/usuarios/${usuarioActual.id}/perfil`, {
+            method: "PATCH",
+            headers,
+            body: formData
+          });
+
+          const result = await response.json().catch(() => ({}));
+
+          if (!response.ok) {
+            alert(result.detail || "No se pudo actualizar el perfil");
+            return;
+          }
+
+          setUsuarioActual(result);
+          usuarioActual = result;
+
+          nombreHeader.textContent = result.nombre || "Usuario HuellaHome";
+          emailHeader.textContent = result.email || "";
+
+          if (result.foto_user) {
+            userAvatarImg.src = result.foto_user;
+          }
+
+          alert("Perfil actualizado correctamente.");
+        } catch (error) {
+          console.error("Error actualizando perfil:", error);
+          alert("Error de conexión con el servidor");
+        }
+      });
+    }
+
+    cargarPerfilUsuario();
+  </script>
+</body>
+</html>

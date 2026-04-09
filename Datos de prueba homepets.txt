@@ -47,6 +47,48 @@ PENDIENTES:
 - Posible transformacion a adopciones de mascotas o venta de razas finas: tema de conversacion: ❗
 ---------------------------------------------------------------------------------------
 Boton de ubicacion en Detalles anfitrion:
-____________________________________________
+_____________________________________________________________________________________________________________
 Faltantes:
-1. La API estaba corriendo, pero sin credenciales administrativas.
+1. en perfil de usuario, la direccion de residencia no se actualiza ❌
+2. en perfil de usuario la foto de perfil queda guardada en el mismo perfil pero en el index no cambia ❌
+3. meterle mas informacion a perfil-anfitrion
+_____________________________________________________________________________________________________________
+POR HACER:
+1. guardar mascotas en PostgreSQL
+_________________________________________________________________________________________________________________________
+Eliminar anfitriones (Web - BD)
+2. para eliminar anfitriones con mi rol de administrador tengo que entrar en el swagger y en /usuario/login
+con mi email y contraseña, copiar mi token access y verificarme, ya despues si puedo eliminar en el swagger en "DELETE"
+con el <<ID del ANFITRION>> no con el del usuario.
+_______________________________________________________________________________________________________________________
+   RECTA FINAL
+        
+Excelente! hay bastantes cosas mas que faltan para irlo dejando finalizado.                                              ( ❌ ❗ ✔️ ) 
+1. la parte del codigo en main que le puse los # la dejo asi? o la borro? 
+✔️
+2. Hace falta hacerme un usuario a mi como administrador para eliminar anfitriones 
+✔️
+3. Poder entrar a cada perfil de anfitriones y poder editar asi mismo como en el perfil-usuario, 
+quiero que si en las tarjetas de detalle-anfitrión estoy logeado con ese mismo perfil me deje 
+editar la informacion que hay ahi asi mismo como en perfil-usuario
+✔️
+4. hacer funcional en el index la barra del buscador de cuidad 
+✔️
+5. este botón de ubicacion pasarlo a las tarjetas de anfitriones y que al darle clic lo lleve a la direccion que se pone en los datos del anfitrión 
+
+6. abrir una tabla nueva en pgAdmin que se llame mascotas y se guarden en la nueva tabla de la base de datos, que quede registrado el id del usuario que lo registro, 
+es decir que guarde el id del perfil de usuario al momento de registrar la mascota. 
+
+7. ahi mismo en el index hay un botón de fechas que tambien quedo obsoleto al igual que ubicacion y mascotas, la idea con el botón de fechas es agregarlo 
+tambien a la tarjeta de detalle-anfitrión para asi mismo ver que dias tiene disposición y que dias no, la idea con eso es que al darle clic a fechas se 
+despliegue como un tipo de calendario modal con los dias en verde que signifique los dias que esta disponible y en rojo los dias que no.
+
+8. tambien hay una cosita en la base de datos que podemos mejorar, lo que pasa es que en la tabla de usuario todos se les esta colocando el rol de cliente, 
+pero por ejemplo los usuarios 7,8,9,10 son anfitriones, pero se registran como clientes, se puede cambiar esto para que cuando se registren queden logeados 
+como anfitriones o los tengo que cambiar manualmente en la bd? 
+
+9. Por ultimo tengo pensado eliminar el botón en detalle-anfitrión que es de reservar y como 
+decir eliminar la opcion de comunicarse por WhatsApp y crear un chat interno entre clientes y anfitriones 
+
+10. modiciar el numero de los usuarios, dejar el prefijo para seleccionae y escribir el numero
+

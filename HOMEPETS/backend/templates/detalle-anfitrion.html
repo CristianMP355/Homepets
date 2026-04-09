@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>HuellaHome - Detalles de anfitrión</title>
+  <link rel="stylesheet" href="/static/estilos.css">
+</head>
+<body>
+  <main class="page">
+
+    <header class="app-header">
+      <button class="back-btn" onclick="window.location.href='/'">←</button>
+      <span class="app-title">Detalles del anfitrión</span>
+      <span></span>
+    </header>
+
+    <section id="host-detail"></section>
+
+  </main>
+
+  <button class="btn-primary" id="btn-reservar"
+          style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);max-width:380px;">
+    Reservar ahora
+  </button>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:8000";
+    const detailContainer = document.getElementById("host-detail");
+    const btnReservar = document.getElementById("btn-reservar");
+
+    function getHostSeleccionado() {
+      try {
+        return JSON.parse(localStorage.getItem("anfitrionSeleccionado"));
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function getUsuarioActual() {
+      try {
+        return JSON.parse(localStorage.getItem("usuarioActual"));
+      } catch (e) {
+        return null;
+      }
+    }
+
+    async function renderHostDetail() {
+      if (!detailContainer) return;
+
+      const hostBase = getHostSeleccionado();
+
+      if (!hostBase || !hostBase.id) {
+        detailContainer.innerHTML = "<p>No se encontró la información del anfitrión.</p>";
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/anfitriones/${hostBase.id}/detalle`);
+        const host = await response.json();
+
+        if (!response.ok) {
+          detailContainer.innerHTML = "<p>No se pudo cargar el detalle del anfitrión.</p>";
+          return;
+        }
+
+        const usuarioActual = getUsuarioActual();
+        const esDuenoDelPerfil =
+          usuarioActual &&
+          usuarioActual.id &&
+          Number(usuarioActual.id) === Number(host.usuario_id);
+
+        const foto = host.foto && host.foto.trim() !== ""
+          ? host.foto
+          : "/static/img/anfitrion.jpg";
+
+        const galeria = (host.fotos_espacio || []).map(item => `
+          <img src="${item.ruta_foto}"
+               alt="Foto del espacio"
+               style="width:120px;height:120px;object-fit:cover;border-radius:14px;">
+        `).join("");
+
+        detailContainer.innerHTML = `
+          <section style="margin-bottom:16px;">
+            <img src="${foto}" alt="Foto del anfitrión" class="host-hero">
+          </section>
+
+          <section style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+            <div class="host-avatar">
+              <img src="${foto}" alt="Foto anfitrión">
+            </div>
+            <div style="flex:1;">
+              <h2 style="margin:0;font-size:1.2rem;">${host.nombre || "Anfitrión sin nombre"}</h2>
+              <p style="margin:2px 0 0;font-size:0.9rem;color:var(--muted);">
+                ${host.direccion || "Dirección no especificada"}
+              </p>
+            </div>
+          </section>
+
+          ${esDuenoDelPerfil ? `
+            <div style="margin: 0 0 14px 0;">
+              <button id="btn-editar-anfitrion" class="btn-primary" style="width:100%;">
+                Editar mi perfil de anfitrión
+              </button>
+            </div>
+          ` : ""}
+
+          <section class="host-section">
+            <div class="host-section-header">
+              <span>Sobre mí</span>
+            </div>
+            <p class="host-section-text">
+              ${host.descripcion || "Este anfitrión aún no ha agregado una descripción."}
+            </p>
+          </section>
+
+          <section class="host-section">
+            <div class="host-section-header">
+              <span>Mi hogar</span>
+            </div>
+            <p class="host-section-text">
+              ${host.direccion || "Dirección no especificada."}
+            </p>
+          </section>
+
+          <section class="host-section">
+            <div class="host-section-header">
+              <span>Fotos del espacio</span>
+            </div>
+            ${
+              galeria
+                ? `<div style="display:flex;gap:10px;overflow-x:auto;padding-top:10px;">${galeria}</div>`
+                : `<p class="host-section-text">Este anfitrión aún no ha subido fotos del espacio.</p>`
+            }
+          </section>
+
+          <section class="host-section">
+            <div class="host-section-header">
+              <span>Contacto</span>
+            </div>
+            <p class="host-section-text">
+              Teléfono: ${host.telefono || "No registrado."}
+            </p>
+            <p class="host-section-text">
+              Correo: ${host.email || "No registrado."}
+            </p>
+          </section>
+        `;
+
+        if (esDuenoDelPerfil) {
+          const btnEditar = document.getElementById("btn-editar-anfitrion");
+          if (btnEditar) {
+            btnEditar.onclick = () => {
+              localStorage.setItem("anfitrionEditar", JSON.stringify(host));
+              window.location.href = "/perfil-anfitrion";
+            };
+          }
+        }
+
+        btnReservar.onclick = () => {
+          if (!host.telefono) {
+            alert("Este anfitrión no tiene número de WhatsApp registrado.");
+            return;
+          }
+
+          const rawPhone = host.telefono.replace(/[^\d]/g, "");
+          const telefonoIntl = rawPhone.startsWith("57") ? rawPhone : "57" + rawPhone;
+
+          const mensaje = encodeURIComponent(
+            `Hola ${host.nombre || ""}, vi tu perfil en HuellaHome y me gustaría reservar hospedaje para mi mascota.`
+          );
+
+          const url = `https://wa.me/${telefonoIntl}?text=${mensaje}`;
+          window.open(url, "_blank");
+        };
+
+      } catch (error) {
+        console.error("Error cargando detalle del anfitrión:", error);
+        detailContainer.innerHTML = "<p>Error de conexión cargando el detalle.</p>";
+      }
+    }
+
+    renderHostDetail();
+  </script>
+</body>
+</html>

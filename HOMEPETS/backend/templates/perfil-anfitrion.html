@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>HuellaHome - Perfil anfitrión</title>
+  <link rel="stylesheet" href="/static/estilos.css">
+</head>
+<body>
+  <main class="page">
+
+    <header class="app-header">
+      <button class="back-btn" onclick="window.location.href='/'">←</button>
+      <span class="app-title">Perfil anfitrión</span>
+      <span></span>
+    </header>
+
+    <section style="text-align:center;margin-bottom:24px;">
+      <div class="host-avatar">
+        <img src="/static/img/anfitrion.jpg" alt="Foto anfitrión" id="host-photo">
+      </div>
+      <button class="edit-avatar-btn" id="btn-change-photo" type="button">Cambiar foto</button>
+      <input type="file" id="host-photo-input" accept="image/*" style="display:none;">
+      <p id="photo-help-text" style="font-size:0.9rem;color:#8a5a2b;margin-top:8px;">
+        La foto del anfitrión es obligatoria al crear el perfil.
+      </p>
+    </section>
+
+    <section>
+      <label class="field-label">Dirección / Barrio / Ciudad</label>
+      <input
+        class="input-pill host-direccion"
+        type="text"
+        placeholder="Ej. Calle 25c # 00-00, Olímpico, Palmira"
+      >
+
+      <label class="field-label">Sobre mí, descripción tuya para los dueños...</label>
+      <textarea
+        class="notes-area host-descripcion"
+        placeholder="Cuenta cómo cuidas a las mascotas."
+      ></textarea>
+
+      <label class="field-label">Fotos del espacio (máximo 5)</label>
+      <input type="file" id="space-photos-input" accept="image/*" multiple>
+      <div id="space-photos-preview" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;"></div>
+    </section>
+
+  </main>
+
+  <button
+    type="button"
+    class="btn-primary"
+    id="btn-save-host"
+    style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);max-width:380px;">
+    Guardar perfil
+  </button>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:8000";
+
+    const btnSaveHost = document.getElementById("btn-save-host");
+    const btnChangePhoto = document.getElementById("btn-change-photo");
+    const photoInput = document.getElementById("host-photo-input");
+    const hostPhoto = document.getElementById("host-photo");
+    const spacePhotosInput = document.getElementById("space-photos-input");
+    const spacePhotosPreview = document.getElementById("space-photos-preview");
+    const photoHelpText = document.getElementById("photo-help-text");
+
+    let selectedPhotoFile = null;
+    let selectedSpacePhotos = [];
+    let anfitrionExistente = null;
+
+    function getHostValue(selector) {
+      const el = document.querySelector(selector);
+      return el ? el.value.trim() : "";
+    }
+
+    function getUsuarioActual() {
+      try {
+        return JSON.parse(localStorage.getItem("usuarioActual"));
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function getAnfitrionEditar() {
+      try {
+        return JSON.parse(localStorage.getItem("anfitrionEditar"));
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function rellenarFormulario(anfitrion) {
+      if (!anfitrion) return;
+
+      const direccionInput = document.querySelector(".host-direccion");
+      const descripcionInput = document.querySelector(".host-descripcion");
+
+      if (direccionInput) direccionInput.value = anfitrion.direccion || "";
+      if (descripcionInput) descripcionInput.value = anfitrion.descripcion || "";
+
+      if (anfitrion.foto && anfitrion.foto.trim() !== "") {
+        hostPhoto.src = anfitrion.foto;
+      }
+
+      if (photoHelpText) {
+        photoHelpText.textContent = "Puedes cambiar la foto si quieres, pero no es obligatoria al editar.";
+      }
+    }
+
+    async function cargarPerfilAnfitrionSiExiste() {
+      const usuario = getUsuarioActual();
+      if (!usuario || !usuario.id) return;
+
+      const anfitrionLocal = getAnfitrionEditar();
+
+      if (anfitrionLocal && Number(anfitrionLocal.usuario_id) === Number(usuario.id)) {
+        anfitrionExistente = anfitrionLocal;
+        rellenarFormulario(anfitrionExistente);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/usuarios/${usuario.id}/anfitrion`);
+        const data = await response.json().catch(() => ({}));
+
+        if (response.ok) {
+          anfitrionExistente = data;
+          rellenarFormulario(anfitrionExistente);
+        }
+      } catch (error) {
+        console.error("No se pudo consultar el perfil de anfitrión existente:", error);
+      }
+    }
+
+    if (btnChangePhoto && photoInput) {
+      btnChangePhoto.addEventListener("click", () => {
+        photoInput.click();
+      });
+
+      photoInput.addEventListener("change", (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (!file.type.startsWith("image/")) {
+          alert("Debes seleccionar una imagen válida.");
+          photoInput.value = "";
+          selectedPhotoFile = null;
+          return;
+        }
+
+        selectedPhotoFile = file;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          hostPhoto.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    if (spacePhotosInput) {
+      spacePhotosInput.addEventListener("change", (event) => {
+        const files = Array.from(event.target.files || []);
+
+        if (files.length > 5) {
+          alert("Solo puedes seleccionar máximo 5 fotos del espacio.");
+          spacePhotosInput.value = "";
+          selectedSpacePhotos = [];
+          spacePhotosPreview.innerHTML = "";
+          return;
+        }
+
+        selectedSpacePhotos = files;
+        spacePhotosPreview.innerHTML = "";
+
+        files.forEach((file) => {
+          if (!file.type.startsWith("image/")) return;
+
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const img = document.createElement("img");
+            img.src = e.target.result;
+            img.style.width = "90px";
+            img.style.height = "90px";
+            img.style.objectFit = "cover";
+            img.style.borderRadius = "12px";
+            spacePhotosPreview.appendChild(img);
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+    }
+
+    if (btnSaveHost) {
+      btnSaveHost.addEventListener("click", async (event) => {
+        event.preventDefault();
+
+        const usuario = getUsuarioActual();
+        const token = localStorage.getItem("access_token");
+
+        if (!usuario || !usuario.id) {
+          alert("Debes iniciar sesión para continuar");
+          return;
+        }
+
+        if (!token) {
+          alert("Tu sesión no tiene token. Vuelve a iniciar sesión.");
+          return;
+        }
+
+        const descripcion = getHostValue(".host-descripcion");
+        const direccion = getHostValue(".host-direccion");
+
+        if (!direccion) {
+          alert("Debes escribir una dirección");
+          return;
+        }
+
+        if (!descripcion) {
+          alert("Debes escribir una descripción");
+          return;
+        }
+
+        const headers = {
+          "Authorization": `Bearer ${token}`
+        };
+
+        try {
+          if (anfitrionExistente && anfitrionExistente.id) {
+            const formData = new FormData();
+            formData.append("descripcion", descripcion);
+            formData.append("direccion", direccion);
+
+            if (selectedPhotoFile) {
+              formData.append("foto", selectedPhotoFile);
+            }
+
+            const response = await fetch(`${API_BASE}/anfitriones/${anfitrionExistente.id}`, {
+              method: "PATCH",
+              headers,
+              body: formData
+            });
+
+            const result = await response.json().catch(() => ({}));
+            console.log("PATCH actualizar anfitrión:", response.status, result);
+
+            if (response.ok) {
+              const anfitrionActualizado = {
+                ...anfitrionExistente,
+                ...result
+              };
+
+              localStorage.setItem("anfitrionEditar", JSON.stringify(anfitrionActualizado));
+              localStorage.setItem("anfitrionSeleccionado", JSON.stringify(anfitrionActualizado));
+
+              alert("Perfil de anfitrión actualizado correctamente");
+              window.location.href = "/detalle-anfitrion";
+            } else {
+              alert(result.detail || "Error al actualizar anfitrión");
+            }
+
+            return;
+          }
+
+          if (!selectedPhotoFile) {
+            alert("La foto del anfitrión es obligatoria");
+            return;
+          }
+
+          if (selectedSpacePhotos.length > 5) {
+            alert("Solo puedes subir máximo 5 fotos del espacio");
+            return;
+          }
+
+          const formData = new FormData();
+          formData.append("usuario_id", usuario.id);
+          formData.append("descripcion", descripcion);
+          formData.append("direccion", direccion);
+          formData.append("foto", selectedPhotoFile);
+
+          selectedSpacePhotos.forEach((file) => {
+            formData.append("fotos_espacio", file);
+          });
+
+          const response = await fetch(`${API_BASE}/anfitriones`, {
+            method: "POST",
+            headers,
+            body: formData
+          });
+
+          const result = await response.json().catch(() => ({}));
+          console.log("POST crear anfitrión:", response.status, result);
+
+          if (response.ok) {
+            localStorage.setItem("anfitrionSeleccionado", JSON.stringify(result));
+            alert("Perfil de anfitrión guardado correctamente");
+            window.location.href = "/";
+          } else {
+            alert(result.detail || "Error al guardar anfitrión");
+          }
+        } catch (error) {
+          console.error("Error al guardar/actualizar anfitrión:", error);
+          alert("Error de conexión con el servidor");
+        }
+      });
+    }
+
+    cargarPerfilAnfitrionSiExiste();
+  </script>
+</body>
+</html>
