@@ -2,18 +2,23 @@
 __pycache__/
 *.pyc
 *.pyo
-.env
-*.db
+
+# Entornos virtuales
 .venv/
 venv/
 
-# Alembic cache
+# Variables de entorno (CRÍTICO)
+.env
+*.env
+
+# Bases de datos locales
+*.db
+
+# Alembic
 alembic/__pycache__/
 
-# VS Code
+# Editor
 .vscode/
 
-# Archivos locales
+# Archivos innecesarios
 *.txt
-
-backend/.env
