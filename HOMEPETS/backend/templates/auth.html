@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>HomePets - Acceso</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/static/estilos.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body class="auth-body">
+  <main class="auth-page">
+    <header class="app-header auth-header">
+      <h1 class="app-title">HomePets</h1>
+      <p class="app-subtitle">Encuentra el mejor hogar para tu mascota</p>
+    </header>
+
+    <section class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login" type="button">Iniciar sesión</button>
+        <button class="auth-tab" data-tab="register" type="button">Registrarse</button>
+      </div>
+
+      <!-- LOGIN -->
+      <form id="form-login" class="auth-form visible">
+        <h2 class="auth-form-title">Bienvenido de nuevo</h2>
+
+        <label class="auth-label">
+          Correo electrónico
+          <input
+            type="email"
+            id="login-email"
+            class="auth-input"
+            placeholder="tu@correo.com"
+            required
+          />
+        </label>
+
+        <label class="auth-label" style="position:relative;">
+          Contraseña
+          <input
+            type="password"
+            id="login-password"
+            class="auth-input"
+            placeholder="••••••••"
+            required
+            style="padding-right:40px;"
+          />
+          <span id="login-eye" class="password-eye" title="Mostrar contraseña">visibility_off</span>
+        </label>
+
+        <button type="submit" class="btn-primary auth-btn">Entrar</button>
+
+        <p class="auth-helper">
+          ¿No tienes cuenta? <span class="auth-link" data-go="register">Crear una cuenta</span>
+        </p>
+      </form>
+
+      <!-- REGISTRO -->
+      <form id="form-register" class="auth-form">
+        <h2 class="auth-form-title">Crear cuenta</h2>
+
+        <label class="auth-label">
+          Nombre completo
+          <input
+            type="text"
+            id="reg-name"
+            class="auth-input"
+            placeholder="Tu nombre"
+            required
+          />
+        </label>
+
+          <label class="auth-label">
+           Teléfono (WhatsApp)
+
+           <div style="display:flex; gap:8px;">
+            <select
+             id="reg-prefijo"
+             class="auth-input"
+             style="max-width:110px;"
+          >
+             <option value="+57">🇨🇴 +57</option>
+             <option value="+1">🇺🇸 +1</option>
+             <option value="+34">🇪🇸 +34</option>
+             <option  value="+52">🇲🇽 +52</option>
+             <option value="+54">🇦🇷 +54</option>
+             <option value="+51">🇵🇪 +51</option>
+             <option value="+56">🇨🇱 +56</option>
+          </select>
+
+          <input
+            type="tel"
+            id="reg-telefono"
+            class="auth-input"
+            placeholder="3178737111"
+            style="flex:1;"
+          />
+        </div>
+       </label>
+
+        <label class="auth-label">
+          Correo electrónico
+          <input
+            type="email"
+            id="reg-email"
+            class="auth-input"
+            placeholder="tu@correo.com"
+            required
+          />
+        </label>
+
+        <label class="auth-label" style="position:relative;">
+          Contraseña
+          <input
+            type="password"
+            id="reg-password"
+            class="auth-input"
+            placeholder="Mínimo 6 caracteres"
+            required
+            style="padding-right:40px;"
+          />
+          <span id="reg-eye" class="password-eye" title="Mostrar contraseña">visibility_off</span>
+        </label>
+
+        <label class="auth-label" style="position:relative;">
+          Confirmar contraseña
+          <input
+            type="password"
+            id="reg-password2"
+            class="auth-input"
+            placeholder="Repite la contraseña"
+            required
+            style="padding-right:40px;"
+          />
+          <span id="reg-eye2" class="password-eye" title="Mostrar contraseña">visibility_off</span>
+        </label>
+
+        <button type="submit" class="btn-primary auth-btn">Registrarme</button>
+
+        <p class="auth-helper">
+          ¿Ya tienes cuenta? <span class="auth-link" data-go="login">Inicia sesión</span>
+        </p>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const API_BASE = "";
+
+    function getUsuarioActual() {
+      try {
+        return JSON.parse(localStorage.getItem("usuarioActual"));
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function getToken() {
+      return localStorage.getItem("access_token");
+    }
+
+    function setSesion(usuario, token = null) {
+      localStorage.setItem("usuarioActual", JSON.stringify({
+        id: usuario.id,
+        nombre: usuario.nombre,
+        email: usuario.email,
+        telefono: usuario.telefono || "",
+        direccion: usuario.direccion || "",
+        rol: usuario.rol || "",
+        foto_user: usuario.foto_user || ""
+         }));
+
+      if (token) {
+        localStorage.setItem("access_token", token);
+      }
+    }
+
+    function cerrarSesion() {
+      localStorage.removeItem("usuarioActual");
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("anfitrionActual");
+    }
+
+    // Si ya hay usuario logueado, redirigir al home
+    const usuarioGuardado = getUsuarioActual();
+    if (usuarioGuardado && usuarioGuardado.id) {
+      window.location.href = "/";
+    } else {
+      // Limpia por si había basura o datos incompletos
+      cerrarSesion();
+    }
+
+    const tabs = document.querySelectorAll(".auth-tab");
+    const forms = {
+      login: document.getElementById("form-login"),
+      register: document.getElementById("form-register")
+    };
+
+    function showTab(tab) {
+      tabs.forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
+      forms.login.classList.toggle("visible", tab === "login");
+      forms.register.classList.toggle("visible", tab === "register");
+    }
+
+    tabs.forEach(tab => {
+      tab.addEventListener("click", () => showTab(tab.dataset.tab));
+    });
+
+    document.querySelectorAll(".auth-link").forEach(link => {
+      link.addEventListener("click", () => showTab(link.dataset.go));
+    });
+
+    async function apiRequest(endpoint, options = {}) {
+      const headers = {
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      };
+
+      const response = await fetch(`${API_BASE}${endpoint}`, {
+        ...options,
+        headers
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Error en la API");
+      }
+
+      return data;
+    }
+
+   // REGISTRO
+   document.getElementById("form-register").addEventListener("submit", async (e) => {
+     e.preventDefault();
+
+    const nombre = document.getElementById("reg-name").value.trim();
+    const email = document.getElementById("reg-email").value.trim().toLowerCase();
+    const prefijo = document.getElementById("reg-prefijo").value;
+    const numeroTelefono = document.getElementById("reg-telefono").value.trim();
+    const telefono = numeroTelefono ? `${prefijo}${numeroTelefono}` : ""; 
+    const pass = document.getElementById("reg-password").value;
+    const pass2 = document.getElementById("reg-password2").value;
+
+  if (!nombre || !email || !pass || !pass2) {
+    alert("Completa todos los campos obligatorios.");
+    return;
+  }
+
+  if (pass.length < 6) {
+    alert("La contraseña debe tener mínimo 6 caracteres.");
+    return;
+  }
+
+  if (pass !== pass2) {
+    alert("Las contraseñas no coinciden.");
+    return;
+  }
+
+  if (numeroTelefono && !/^\d{7,15}$/.test(numeroTelefono)) {
+    alert("El número de teléfono debe contener solo dígitos y tener entre 7 y 15 números.");
+    return;
+  }
+
+  try {
+    // 1. Crear usuario
+    const nuevoUsuario = await apiRequest("/usuarios/", {
+      method: "POST",
+      body: JSON.stringify({
+        nombre,
+        email,
+        telefono,
+        password: pass
+      })
+    });
+
+    // 2. Login automático
+    const loginResponse = await apiRequest("/usuarios/login", {
+      method: "POST",
+      body: JSON.stringify({
+        email,
+        password: pass
+      })
+    });
+
+    // 3. Guardar sesión completa con token
+    setSesion(loginResponse.user, loginResponse.access_token);
+
+    alert(`¡Cuenta creada correctamente, ${nuevoUsuario.nombre}!`);
+    window.location.href = "/";
+  } catch (error) {
+    alert(`Error: ${error.message}`);
+  }
+});
+
+
+    // LOGIN
+    document.getElementById("form-login").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById("login-email").value.trim().toLowerCase();
+      const pass = document.getElementById("login-password").value;
+
+      if (!email || !pass) {
+        alert("Completa todos los campos.");
+        return;
+      }
+
+      try {
+        const response = await apiRequest("/usuarios/login", {
+          method: "POST",
+          body: JSON.stringify({
+            email,
+            password: pass
+          })
+        });
+
+        setSesion(response.user, response.access_token);
+
+        alert(`¡Bienvenido ${response.user.nombre}!`);
+        window.location.href = "/";
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+      }
+    });
+
+    function togglePassword(inputId, eyeId) {
+      const input = document.getElementById(inputId);
+      const eye = document.getElementById(eyeId);
+
+      if (!input || !eye) return;
+
+      eye.addEventListener("click", () => {
+        const isPassword = input.type === "password";
+        input.type = isPassword ? "text" : "password";
+        eye.textContent = isPassword ? "visibility" : "visibility_off";
+        eye.style.color = isPassword ? "#1976d2" : "#666";
+      });
+    }
+
+    togglePassword("login-password", "login-eye");
+    togglePassword("reg-password", "reg-eye");
+    togglePassword("reg-password2", "reg-eye2");
+  </script>
+
+  <style>
+.password-eye {
+  position: absolute;
+  right: 12px;
+  bottom: 30px;  /* ← esto lo ancla al input, no al label */
+  cursor: pointer;
+  font-family: 'Material Icons';
+  font-size: 20px;
+  color: #666;
+  user-select: none;
+  z-index: 10;
+}
+
+    .password-eye:hover {
+      color: #1976d2 !important;
+    }
+
+    .auth-label {
+      position: relative;
+      display: block;
+      margin-bottom: 16px;
+    }
+  </style>
+</body>
+</html>

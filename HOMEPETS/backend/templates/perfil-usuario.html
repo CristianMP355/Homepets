@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>HuellaHome - Perfil de usuario</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/static/estilos.css">
+
+  <style>
+    .user-avatar {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+      overflow: hidden;
+    }
+
+    .user-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .user-name-title {
+      text-align: center;
+      font-size: 1.1rem;
+      margin-bottom: 4px;
+    }
+
+    .user-email-subtitle {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #777;
+      margin-bottom: 18px;
+    }
+
+    .user-form-label {
+      display: block;
+      font-size: 0.9rem;
+      margin: 10px 0 4px;
+      color: var(--brown);
+    }
+
+    .user-form-input {
+      width: 100%;
+    }
+
+    .back-btn {
+      border: none;
+      background: #f3f3f3;
+      font-size: 16px;
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    .back-btn:hover {
+      background: #e9dfd2;
+    }
+  </style>
+</head>
+
+<body class="auth-body">
+  <main class="auth-page">
+
+    <section class="auth-card">
+
+      <!-- HEADER DENTRO DE LA TARJETA -->
+      <header class="app-header" style="margin-bottom:16px;">
+        <button class="back-btn" onclick="window.location.href='/'">←</button>
+        <h1 class="app-title" style="margin:0 auto;">Mi perfil</h1>
+        <span style="width:32px;"></span>
+      </header>
+
+      <!-- PERFIL -->
+      <div style="text-align:center;margin-bottom:16px;">
+        <div class="user-avatar">
+          <img src="/static/img/avatar-default.png" id="user-avatar-img">
+        </div>
+
+        <button class="edit-avatar-btn" id="btn-change-user-photo" type="button">✎</button>
+        <input type="file" id="user-photo-input" accept="image/*" style="display:none;">
+
+        <h2 class="user-name-title" id="perfil-nombre-header">Usuario HuellaHome</h2>
+        <p class="user-email-subtitle" id="perfil-email-header"></p>
+      </div>
+
+      <!-- FORM -->
+      <form id="form-perfil-usuario" class="auth-form visible">
+
+        <label class="user-form-label">
+          Nombre completo
+          <input type="text" id="perfil-nombre" class="auth-input user-form-input" required />
+        </label>
+
+        <label class="user-form-label">
+          Correo electrónico
+          <input type="email" id="perfil-email" class="auth-input user-form-input" required />
+        </label>
+
+        <label class="user-form-label">
+          Teléfono (WhatsApp)
+
+          <div style="display:flex; gap:8px;">
+            <select id="perfil-prefijo" class="auth-input user-form-input" style="max-width:110px;">
+              <option value="+57">🇨🇴 +57</option>
+              <option value="+1">🇺🇸 +1</option>
+              <option value="+34">🇪🇸 +34</option>
+              <option value="+52">🇲🇽 +52</option>
+              <option value="+54">🇦🇷 +54</option>
+              <option value="+51">🇵🇪 +51</option>
+              <option value="+56">🇨🇱 +56</option>
+            </select>
+
+            <input
+              type="tel"
+              id="perfil-telefono"
+              class="auth-input user-form-input"
+              placeholder="3178737111"
+              style="flex:1;"
+              required
+            />
+          </div>
+        </label>
+
+        <label class="user-form-label">
+          Dirección de residencia
+          <input type="text" id="perfil-direccion" class="auth-input user-form-input" />
+        </label>
+
+        <button type="submit" class="btn-primary auth-btn" style="margin-top:16px;">
+          Guardar cambios
+        </button>
+
+      </form>
+    </section>
+  </main>
+
+<script>
+const API_BASE = "";
+
+function getUsuarioActual() {
+  try {
+    return JSON.parse(localStorage.getItem("usuarioActual"));
+  } catch {
+    return null;
+  }
+}
+
+function separarTelefono(telefonoCompleto) {
+  const prefijos = ["+57","+1","+34","+52","+54","+51","+56"];
+
+  for (const p of prefijos) {
+    if (telefonoCompleto.startsWith(p)) {
+      return {
+        prefijo: p,
+        numero: telefonoCompleto.slice(p.length)
+      };
+    }
+  }
+
+  return { prefijo:"+57", numero:telefonoCompleto.replace(/^\+/, "") };
+}
+
+function setUsuarioActual(user) {
+  localStorage.setItem("usuarioActual", JSON.stringify(user));
+}
+
+const userAvatarImg = document.getElementById("user-avatar-img");
+const btnChangeUserPhoto = document.getElementById("btn-change-user-photo");
+const userPhotoInput = document.getElementById("user-photo-input");
+
+const inputNombre = document.getElementById("perfil-nombre");
+const inputEmail = document.getElementById("perfil-email");
+const inputDireccion = document.getElementById("perfil-direccion");
+
+const nombreHeader = document.getElementById("perfil-nombre-header");
+const emailHeader = document.getElementById("perfil-email-header");
+
+const formPerfil = document.getElementById("form-perfil-usuario");
+
+let selectedPhotoFile = null;
+let usuarioActual = getUsuarioActual();
+
+(async function () {
+  if (!usuarioActual) return window.location.href="/auth";
+
+  const res = await fetch(`${API_BASE}/usuarios/${usuarioActual.id}`);
+  const user = await res.json();
+
+  inputNombre.value = user.nombre || "";
+  inputEmail.value = user.email || "";
+  inputDireccion.value = user.direccion || "";
+
+  const tel = separarTelefono(user.telefono || "");
+  document.getElementById("perfil-prefijo").value = tel.prefijo;
+  document.getElementById("perfil-telefono").value = tel.numero;
+
+  nombreHeader.textContent = user.nombre;
+  emailHeader.textContent = user.email;
+
+  if (user.foto_user) userAvatarImg.src = user.foto_user;
+
+  usuarioActual = user;
+})();
+
+btnChangeUserPhoto.addEventListener("click", () => userPhotoInput.click());
+
+userPhotoInput.addEventListener("change", () => {
+  const file = userPhotoInput.files[0];
+  if (!file) return;
+
+  selectedPhotoFile = file;
+
+  const reader = new FileReader();
+  reader.onload = e => userAvatarImg.src = e.target.result;
+  reader.readAsDataURL(file);
+});
+
+formPerfil.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const nombre = inputNombre.value.trim();
+  const email = inputEmail.value.trim().toLowerCase();
+
+  const prefijo = document.getElementById("perfil-prefijo").value;
+  const numero = document.getElementById("perfil-telefono").value.trim();
+
+  const telefono = `${prefijo}${numero}`;
+  const direccion = inputDireccion.value.trim();
+
+  if (!/^\d{7,15}$/.test(numero)) {
+    alert("Número inválido");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("nombre", nombre);
+  formData.append("email", email);
+  formData.append("telefono", telefono);
+  formData.append("direccion", direccion);
+
+  if (selectedPhotoFile) {
+    formData.append("foto_user", selectedPhotoFile);
+  }
+
+  const res = await fetch(`${API_BASE}/usuarios/${usuarioActual.id}/perfil`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
+    body: formData
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) return alert(data.detail);
+
+  alert("Perfil actualizado");
+  location.reload();
+});
+</script>
+
+</body>
+</html>

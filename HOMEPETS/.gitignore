@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.db
+.venv/
+venv/
+
+# Alembic cache
+alembic/__pycache__/
+
+# VS Code
+.vscode/
+
+# Archivos locales
+*.txt
+
+backend/.env

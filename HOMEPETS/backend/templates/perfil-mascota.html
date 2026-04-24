@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <title>HuellaHome - Perfil de mascota</title>
-  <link rel="stylesheet" href="estilos.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/static/estilos.css">
   <style>
-    /* Tamaño controlado del avatar de la mascota */
     .pet-avatar {
       width: 180px;
       height: 180px;
@@ -74,7 +74,7 @@
       box-sizing: border-box;
     }
 
-    /* inputs con clases para el JS */
+    .input-tipo-mascota,
     .input-nombre,
     .input-raza,
     .input-edad {
@@ -85,26 +85,31 @@
 <body>
   <main class="page">
 
-    <!-- Header sencillo con flecha atrás -->
     <header class="app-header">
-      <button class="back-btn" onclick="window.location.href='index.html'">
+      <button class="back-btn" onclick="window.location.href='/'">
         ←
       </button>
       <span class="app-title">Perfil de mascota</span>
       <span></span>
     </header>
 
-    <!-- Avatar de la mascota -->
     <section style="text-align:center;margin-bottom:24px;">
       <div class="pet-avatar">
-        <img src="img/registro-mascotas.png" alt="Foto mascota" id="pet-photo">
+        <img src="/static/img/registro-mascotas.png" alt="Foto mascota" id="pet-photo">
       </div>
       <button class="edit-avatar-btn" id="btn-change-pet-photo">✎</button>
       <input type="file" id="pet-photo-input" accept="image/*" style="display:none;">
     </section>
 
-    <!-------------------------------------- Formulario sobre la mascota----------------------------------------->
     <section>
+      <label class="field-label">Tipo de mascota</label>
+      <input
+        class="input-pill input-tipo-mascota"
+        type="text"
+        placeholder="Perro, Gato, Pájaro..."
+        name="tipo_mascota"
+      >
+
       <label class="field-label">Nombre</label>
       <input class="input-pill input-nombre" type="text" placeholder="Fido" name="nombre">
 
@@ -115,43 +120,52 @@
       <input class="input-pill input-edad" type="text" placeholder="2 años" name="edad">
 
       <label class="field-label">Vacunas que tiene</label>
-      <input class="input-pill pet-vacunas" type="text"
-             placeholder="Ej. Rabia, triple felina, parvovirus">
+      <input
+        class="input-pill pet-vacunas"
+        type="text"
+        placeholder="Ej. Rabia, triple felina, parvovirus"
+      >
 
       <label class="field-label">Notas de comportamiento</label>
-      <textarea class="notes-area" placeholder="Le gustan las caricias, le asustan los truenos..." name="notas"></textarea>
+      <textarea
+        class="notes-area"
+        placeholder="Le gustan las caricias, le asustan los truenos..."
+        name="notas"
+      ></textarea>
     </section>
 
   </main>
 
-  <!-- Botón guardar -->
-  <button class="btn-primary" id="btn-save-pet"
-          style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);max-width:380px;">
+  <button
+    class="btn-primary"
+    id="btn-save-pet"
+    style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);max-width:380px;"
+  >
     Guardar perfil
   </button>
 
-  <!----------------------------------------- SCRIPT de mascota ------------------------------------------------>
   <script>
+    const API_BASE = "";
+
     function getInputValue(selector) {
       const el = document.querySelector(selector);
       return el ? el.value.trim() : '';
     }
 
-    const btnSavePet       = document.getElementById('btn-save-pet');
-    const petPhotoImg      = document.getElementById('pet-photo');
+    const btnSavePet = document.getElementById('btn-save-pet');
+    const petPhotoImg = document.getElementById('pet-photo');
     const btnChangePetPhoto = document.getElementById('btn-change-pet-photo');
-    const petPhotoInput    = document.getElementById('pet-photo-input');
+    const petPhotoInput = document.getElementById('pet-photo-input');
 
-    // Aquí guardamos la foto de la mascota ya comprimida
     let petPhotoData = null;
 
-    // Función para comprimir imagen (igual que en anfitriones)
     function compressImage(file, maxSize = 300, quality = 0.7) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
 
         reader.onload = (e) => {
           const img = new Image();
+
           img.onload = () => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
@@ -178,6 +192,7 @@
             const dataUrl = canvas.toDataURL('image/jpeg', quality);
             resolve(dataUrl);
           };
+
           img.onerror = reject;
           img.src = e.target.result;
         };
@@ -187,7 +202,6 @@
       });
     }
 
-    // Abrir selector de archivos al pulsar el lápiz
     if (btnChangePetPhoto && petPhotoInput) {
       btnChangePetPhoto.addEventListener('click', () => {
         petPhotoInput.click();
@@ -200,7 +214,7 @@
         try {
           petPhotoData = await compressImage(file, 300, 0.7);
           if (petPhotoData && petPhotoImg) {
-            petPhotoImg.src = petPhotoData; // previsualizar
+            petPhotoImg.src = petPhotoData;
           }
         } catch (err) {
           console.error('Error al procesar la imagen de la mascota:', err);
@@ -210,43 +224,68 @@
       });
     }
 
-    //--------------------------------- Botón de Guardar mascota ------------------------
     if (btnSavePet) {
-      btnSavePet.addEventListener('click', () => {
-        // Tomar usuario actual como responsable
-        let responsable = null;
+      btnSavePet.addEventListener('click', async () => {
+        let usuario = null;
+
         try {
           const rawUser = localStorage.getItem('usuarioActual');
           if (rawUser) {
-            const user = JSON.parse(rawUser);
-            responsable = {
-              nombre: user.nombre || '',
-              email: user.email || '',
-              rol: user.rol || '',
-              telefono: user.telefono || ''
-            };
+            usuario = JSON.parse(rawUser);
           }
         } catch (e) {
-          responsable = null;
+          usuario = null;
         }
 
-        const pet = {
-          nombre:  getInputValue('.input-nombre'),
-          raza:    getInputValue('.input-raza'),
-          edad:    getInputValue('.input-edad'),
-          notas:   getInputValue('.notes-area'),
+        if (!usuario || !usuario.id) {
+          alert("Debes iniciar sesión para registrar una mascota.");
+          return;
+        }
+
+        const payload = {
+          tipo_mascota: getInputValue('.input-tipo-mascota'),
+          nombre: getInputValue('.input-nombre'),
+          raza: getInputValue('.input-raza'),
+          edad: getInputValue('.input-edad'),
+          notas: getInputValue('.notes-area'),
           vacunas: getInputValue('.pet-vacunas'),
-          convive: document.querySelector('.pet-convive')?.checked || false,
-          foto:    petPhotoData,              // puede ser null si no eligió foto
-          responsable: responsable            // datos del usuario que la registró
+          convive: document.querySelector('.pet-convive')?.checked ? "si" : "no",
+          foto: petPhotoData,
+          usuario_id: usuario.id
         };
 
-        const current = JSON.parse(localStorage.getItem('mascotas') || '[]');
-        current.push(pet);
-        localStorage.setItem('mascotas', JSON.stringify(current));
+        if (!payload.tipo_mascota) {
+          alert("El tipo de mascota es obligatorio.");
+          return;
+        }
 
-        alert('Mascota guardada correctamente');
-        window.location.href = 'index.html';
+        if (!payload.nombre) {
+          alert("El nombre de la mascota es obligatorio.");
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_BASE}/mascotas`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.detail || "Error al crear mascota");
+          }
+
+          alert("Mascota guardada correctamente 🐶");
+          window.location.href = "/";
+
+        } catch (error) {
+          console.error("Error al guardar mascota:", error);
+          alert("Error al guardar la mascota");
+        }
       });
     }
   </script>
