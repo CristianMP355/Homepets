@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import relationship
-from database.database import Base
+from backend.database.database import Base
 from datetime import datetime
 from datetime import timezone
 import hashlib

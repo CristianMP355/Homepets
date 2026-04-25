@@ -3,8 +3,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from database.database import get_db
-from database.models import Mascota
+from backend.database.database import get_db
+from backend.database.models import Mascota
 from schemas import MascotaCreate, MascotaRead, MascotaDetalle, ResponsableMascotaRead
 from utils.jwt_config import get_current_user
 

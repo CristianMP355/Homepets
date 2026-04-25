@@ -9,8 +9,8 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy import select, func
-from database.database import get_db, engine, Base
-from database.models import Anfitrion, Usuario, FotoEspacio
+from backend.database.database import get_db, engine, Base
+from backend.database.models import Anfitrion, Usuario, FotoEspacio
 from utils.jwt_config import get_current_user
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
