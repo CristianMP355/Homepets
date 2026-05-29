@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>HuellaHome - Detalles de anfitrión</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/static/estilos.css">
+</head>
+<body>
+  <main class="page">
+
+    <header class="app-header">
+      <button class="back-btn" onclick="window.location.href='/'">←</button>
+      <span class="app-title">Detalles del anfitrión</span>
+      <span></span>
+    </header>
+
+    <section id="host-detail"></section>
+
+  </main>
+
+  <button
+    class="btn-primary"
+    id="btn-chat"
+    style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);max-width:380px;"
+  >
+    💬 Chatear con anfitrión
+  </button>
+
+  <div class="calendar-overlay" id="calendar-modal">
+    <div class="calendar-box">
+      <div class="calendar-header">
+        <button class="calendar-nav" id="prev-month">‹</button>
+        <span id="calendar-title">Disponibilidad</span>
+        <button class="calendar-nav" id="next-month">›</button>
+      </div>
+      <div class="calendar-grid" id="calendar-grid"></div>
+      <p class="calendar-legend" style="margin-top:12px;font-size:0.9rem;color:var(--muted);">
+        <span style="color:#4CAF50;font-weight:600;">●</span> Disponible
+        &nbsp;&nbsp;
+        <span style="color:#ff6b6b;font-weight:600;">●</span> No disponible
+      </p>
+    </div>
+  </div>
+
+  <div class="calendar-overlay" id="chat-modal">
+    <div class="calendar-box" style="max-width: 520px; width: 100%;">
+      <div class="calendar-header">
+        <span id="chat-titulo">Conversación</span>
+        <button class="calendar-close" id="chat-close">✕</button>
+      </div>
+
+      <div
+        id="chat-mensajes"
+        style="
+          max-height: 420px;
+          overflow-y: auto;
+          padding: 12px;
+          background: #fffaf5;
+          border-radius: 14px;
+          margin-bottom: 12px;
+        "
+      ></div>
+
+      <form id="chat-form" style="display:flex;gap:8px;align-items:center;">
+        <input
+          type="text"
+          id="chat-input"
+          placeholder="Escribe un mensaje..."
+          class="input-pill"
+          style="flex:1;"
+        >
+        <button type="submit" class="chip">Enviar</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "";
+    const detailContainer = document.getElementById("host-detail");
+
+    let hostDetalleActual = null;
+    let currentCalendarDate = new Date();
+    let chatUsuarioActualAbierto = null;
+
+    function getHostSeleccionado() {
+      try {
+        return JSON.parse(localStorage.getItem("anfitrionSeleccionado"));
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function getUsuarioActual() {
+      try {
+        return JSON.parse(localStorage.getItem("usuarioActual"));
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function getAccessToken() {
+      return localStorage.getItem("access_token");
+    }
+
+    function parsearFechasNoDisponibles(valor) {
+      if (!valor) return [];
+
+      if (Array.isArray(valor)) {
+        return valor;
+      }
+
+      if (typeof valor === "string") {
+        const limpio = valor.trim();
+
+        if (!limpio) return [];
+
+        try {
+          const parsed = JSON.parse(limpio);
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+        } catch (e) {
+          // sigue con formato separado por comas
+        }
+
+        return limpio
+          .split(",")
+          .map(item => item.trim())
+          .filter(Boolean);
+      }
+
+      return [];
+    }
+
+    function formatearFechaLocal(year, monthIndex, day) {
+      const mm = String(monthIndex + 1).padStart(2, "0");
+      const dd = String(day).padStart(2, "0");
+      return `${year}-${mm}-${dd}`;
+    }
+
+    function renderizarCalendario(fechasNoDisponibles = []) {
+      const grid = document.getElementById("calendar-grid");
+      const title = document.getElementById("calendar-title");
+
+      if (!grid || !title) return;
+
+      const year = currentCalendarDate.getFullYear();
+      const month = currentCalendarDate.getMonth();
+
+      const nombresMeses = [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+      ];
+
+      const nombresDias = ["L", "M", "M", "J", "V", "S", "D"];
+
+      title.textContent = `${nombresMeses[month]} ${year}`;
+      grid.innerHTML = "";
+
+      nombresDias.forEach(dia => {
+        const weekday = document.createElement("div");
+        weekday.className = "calendar-weekday";
+        weekday.textContent = dia;
+        grid.appendChild(weekday);
+      });
+
+      const primerDia = new Date(year, month, 1);
+      const ultimoDia = new Date(year, month + 1, 0);
+      const totalDias = ultimoDia.getDate();
+
+      let inicioSemana = primerDia.getDay();
+      inicioSemana = inicioSemana === 0 ? 6 : inicioSemana - 1;
+
+      for (let i = 0; i < inicioSemana; i++) {
+        const empty = document.createElement("div");
+        empty.className = "calendar-day";
+        empty.style.visibility = "hidden";
+        grid.appendChild(empty);
+      }
+
+      for (let dia = 1; dia <= totalDias; dia++) {
+        const fecha = formatearFechaLocal(year, month, dia);
+        const celda = document.createElement("div");
+        celda.className = "calendar-day";
+        celda.textContent = dia;
+
+        if (fechasNoDisponibles.includes(fecha)) {
+          celda.style.background = "#ff6b6b";
+          celda.style.color = "#fff";
+        } else {
+          celda.style.background = "#4CAF50";
+          celda.style.color = "#fff";
+        }
+
+        grid.appendChild(celda);
+      }
+    }
+
+    function abrirCalendario() {
+      const modal = document.getElementById("calendar-modal");
+      if (!modal || !hostDetalleActual) return;
+
+      const fechasNoDisponibles = parsearFechasNoDisponibles(hostDetalleActual.fechas_no_disponibles);
+      renderizarCalendario(fechasNoDisponibles);
+      modal.classList.add("active");
+    }
+
+    function cerrarCalendario() {
+      const modal = document.getElementById("calendar-modal");
+      if (!modal) return;
+      modal.classList.remove("active");
+    }
+
+    async function obtenerConversacion(otroUsuarioId) {
+      const token = getAccessToken();
+
+      if (!token) return [];
+
+      try {
+        const response = await fetch(`${API_BASE}/mensajes/conversacion/${otroUsuarioId}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("No se pudo obtener la conversación");
+        }
+
+        return await response.json();
+      } catch (error) {
+        console.error("Error obteniendo conversación:", error);
+        return [];
+      }
+    }
+
+    function renderizarConversacion(mensajes) {
+      const contenedor = document.getElementById("chat-mensajes");
+      const usuario = getUsuarioActual();
+
+      if (!contenedor || !usuario) return;
+
+      contenedor.innerHTML = "";
+
+      if (!mensajes || mensajes.length === 0) {
+        contenedor.innerHTML = `
+          <p style="margin:0;color:var(--muted);">
+            Aún no hay mensajes en esta conversación.
+          </p>
+        `;
+        return;
+      }
+
+      mensajes.forEach((msg) => {
+        const esMio = Number(msg.emisor_id) === Number(usuario.id);
+
+        const burbuja = document.createElement("div");
+        burbuja.style.display = "flex";
+        burbuja.style.justifyContent = esMio ? "flex-end" : "flex-start";
+        burbuja.style.marginBottom = "10px";
+
+        burbuja.innerHTML = `
+          <div style="
+            max-width:75%;
+            padding:10px 12px;
+            border-radius:16px;
+            background:${esMio ? "#ffd8a8" : "#ffffff"};
+            border:1px solid #f0e1d2;
+            box-shadow:0 2px 8px rgba(0,0,0,0.04);
+          ">
+            <div style="font-size:0.95rem;color:#333;">
+              ${msg.contenido}
+            </div>
+            <div style="margin-top:6px;font-size:0.75rem;color:#777;text-align:right;">
+              ${new Date(msg.fecha_envio).toLocaleString()}
+              ${esMio ? ` · ${msg.leido ? "✓✓ Leído" : "✓ Enviado"}` : ""}
+            </div>
+          </div>
+        `;
+
+        contenedor.appendChild(burbuja);
+      });
+
+      contenedor.scrollTop = contenedor.scrollHeight;
+    }
+
+    async function abrirChat(otroUsuarioId, nombreUsuario) {
+      const modal = document.getElementById("chat-modal");
+      const titulo = document.getElementById("chat-titulo");
+
+      if (!modal || !titulo) return;
+
+      chatUsuarioActualAbierto = otroUsuarioId;
+      titulo.textContent = `Chat con ${nombreUsuario}`;
+      modal.classList.add("active");
+
+      const mensajes = await obtenerConversacion(otroUsuarioId);
+      renderizarConversacion(mensajes);
+    }
+
+    function cerrarChat() {
+      const modal = document.getElementById("chat-modal");
+      if (!modal) return;
+
+      modal.classList.remove("active");
+      chatUsuarioActualAbierto = null;
+    }
+
+    async function enviarMensajeChat(e) {
+      e.preventDefault();
+
+      const input = document.getElementById("chat-input");
+      const usuarioDestino = chatUsuarioActualAbierto;
+      const token = getAccessToken();
+
+      if (!input || !usuarioDestino || !token) return;
+
+      const contenido = input.value.trim();
+      if (!contenido) return;
+
+      try {
+        const response = await fetch(`${API_BASE}/mensajes`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            receptor_id: usuarioDestino,
+            contenido
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error("No se pudo enviar el mensaje");
+        }
+
+        input.value = "";
+
+        const mensajes = await obtenerConversacion(usuarioDestino);
+        renderizarConversacion(mensajes);
+      } catch (error) {
+        console.error("Error enviando mensaje:", error);
+        alert("No se pudo enviar el mensaje.");
+      }
+    }
+
+    async function renderHostDetail() {
+      if (!detailContainer) return;
+
+      const hostBase = getHostSeleccionado();
+
+      if (!hostBase || !hostBase.id) {
+        detailContainer.innerHTML = "<p>No se encontró la información del anfitrión.</p>";
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/anfitriones/${hostBase.id}/detalle`);
+        const host = await response.json();
+
+        if (!response.ok) {
+          detailContainer.innerHTML = "<p>No se pudo cargar el detalle del anfitrión.</p>";
+          return;
+        }
+
+        hostDetalleActual = host;
+
+        const usuarioActual = getUsuarioActual();
+        const esDuenoDelPerfil =
+          usuarioActual &&
+          usuarioActual.id &&
+          Number(usuarioActual.id) === Number(host.usuario_id);
+
+        const foto = host.foto && host.foto.trim() !== ""
+          ? host.foto
+          : "/static/img/anfitrion.jpg";
+
+        const galeria = (host.fotos_espacio || []).map(item => `
+          <img src="${item.ruta_foto}"
+               alt="Foto del espacio"
+               style="width:120px;height:120px;object-fit:cover;border-radius:14px;">
+        `).join("");
+
+        detailContainer.innerHTML = `
+          <section style="margin-bottom:16px;">
+            <img src="${foto}" alt="Foto del anfitrión" class="host-hero">
+          </section>
+
+          <section style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+            <div class="host-avatar">
+              <img src="${foto}" alt="Foto anfitrión">
+            </div>
+            <div style="flex:1;">
+              <h2 style="margin:0;font-size:1.2rem;">${host.nombre || "Anfitrión sin nombre"}</h2>
+              <p style="margin:2px 0 0;font-size:0.9rem;color:var(--muted);">
+                ${host.direccion || "Dirección no especificada"}
+              </p>
+            </div>
+          </section>
+
+          ${esDuenoDelPerfil ? `
+            <div style="margin: 0 0 14px 0;">
+              <button id="btn-editar-anfitrion" class="btn-primary" style="width:100%;">
+                Editar mi perfil de anfitrión
+              </button>
+            </div>
+          ` : ""}
+
+          <section class="host-section">
+            <div class="host-section-header">
+              <span>Sobre mí</span>
+            </div>
+            <p class="host-section-text">
+              ${host.descripcion || "Este anfitrión aún no ha agregado una descripción."}
+            </p>
+          </section>
+
+          <section class="host-section">
+            <div class="host-section-header">
+              <span>Mi hogar</span>
+            </div>
+
+            <p class="host-section-text" style="margin-bottom:10px;">
+              ${host.direccion || "Dirección no especificada."}
+            </p>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+              <button
+                id="btn-ver-ubicacion-detalle"
+                type="button"
+                style="
+                  display:inline-flex;
+                  align-items:center;
+                  gap:6px;
+                  padding:10px 14px;
+                  border:none;
+                  border-radius:999px;
+                  background:#f4eee7;
+                  color:#5f554a;
+                  font-size:0.82rem;
+                  cursor:pointer;
+                  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+                  transition: all 0.2s ease;
+                "
+              >
+                <span>📍</span>
+                <span>Ver ubicación</span>
+              </button>
+
+              <button
+                id="btn-ver-disponibilidad"
+                type="button"
+                style="
+                  display:inline-flex;
+                  align-items:center;
+                  gap:6px;
+                  padding:10px 14px;
+                  border:none;
+                  border-radius:999px;
+                  background:#f4eee7;
+                  color:#5f554a;
+                  font-size:0.82rem;
+                  cursor:pointer;
+                  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+                  transition: all 0.2s ease;
+                "
+              >
+                <span>📅</span>
+                <span>Ver disponibilidad</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="host-section">
+            <div class="host-section-header">
+              <span>Fotos del espacio</span>
+            </div>
+            ${
+              galeria
+                ? `<div style="display:flex;gap:10px;overflow-x:auto;padding-top:10px;">${galeria}</div>`
+                : `<p class="host-section-text">Este anfitrión aún no ha subido fotos del espacio.</p>`
+            }
+          </section>
+
+          <section class="host-section">
+            <div class="host-section-header">
+              <span>Contacto</span>
+            </div>
+            <p class="host-section-text">
+              Teléfono: ${host.telefono || "No registrado."}
+            </p>
+            <p class="host-section-text">
+              Correo: ${host.email || "No registrado."}
+            </p>
+          </section>
+        `;
+
+        if (esDuenoDelPerfil) {
+          const btnEditar = document.getElementById("btn-editar-anfitrion");
+          if (btnEditar) {
+            btnEditar.onclick = () => {
+              localStorage.setItem("anfitrionEditar", JSON.stringify(host));
+              window.location.href = "/perfil-anfitrion";
+            };
+          }
+        }
+
+        const btnVerUbicacionDetalle = document.getElementById("btn-ver-ubicacion-detalle");
+        if (btnVerUbicacionDetalle) {
+          btnVerUbicacionDetalle.addEventListener("click", () => {
+            if (!host.direccion || host.direccion.trim() === "") {
+              alert("Este anfitrión no tiene dirección registrada.");
+              return;
+            }
+
+            const direccion = encodeURIComponent(host.direccion);
+            const urlMaps = `https://www.google.com/maps/search/?api=1&query=${direccion}`;
+            window.open(urlMaps, "_blank");
+          });
+        }
+
+        const btnVerDisponibilidad = document.getElementById("btn-ver-disponibilidad");
+        if (btnVerDisponibilidad) {
+          btnVerDisponibilidad.addEventListener("click", abrirCalendario);
+        }
+
+        const btnChat = document.getElementById("btn-chat");
+        if (btnChat) {
+          btnChat.onclick = async () => {
+            const usuarioActual = getUsuarioActual();
+
+            if (!usuarioActual || !usuarioActual.id) {
+              alert("Debes iniciar sesión.");
+              window.location.href = "/auth";
+              return;
+            }
+
+            if (!host || !host.usuario_id) {
+              alert("No se pudo identificar al anfitrión.");
+              return;
+            }
+
+            if (Number(usuarioActual.id) === Number(host.usuario_id)) {
+              alert("Este es tu propio perfil.");
+              return;
+            }
+
+            await abrirChat(host.usuario_id, host.nombre || "Anfitrión");
+          };
+        }
+
+      } catch (error) {
+        console.error("Error cargando detalle del anfitrión:", error);
+        detailContainer.innerHTML = "<p>Error de conexión cargando el detalle.</p>";
+      }
+    }
+
+    document.getElementById("calendar-modal")?.addEventListener("click", (e) => {
+      if (e.target.id === "calendar-modal") {
+        cerrarCalendario();
+      }
+    });
+
+    document.getElementById("prev-month")?.addEventListener("click", () => {
+      currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+      const fechasNoDisponibles = parsearFechasNoDisponibles(hostDetalleActual?.fechas_no_disponibles);
+      renderizarCalendario(fechasNoDisponibles);
+    });
+
+    document.getElementById("next-month")?.addEventListener("click", () => {
+      currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+      const fechasNoDisponibles = parsearFechasNoDisponibles(hostDetalleActual?.fechas_no_disponibles);
+      renderizarCalendario(fechasNoDisponibles);
+    });
+
+    const chatClose = document.getElementById("chat-close");
+    if (chatClose) {
+      chatClose.addEventListener("click", cerrarChat);
+    }
+
+    const chatModal = document.getElementById("chat-modal");
+    if (chatModal) {
+      chatModal.addEventListener("click", (e) => {
+        if (e.target === chatModal) {
+          cerrarChat();
+        }
+      });
+    }
+
+    const chatForm = document.getElementById("chat-form");
+    if (chatForm) {
+      chatForm.addEventListener("submit", enviarMensajeChat);
+    }
+
+    renderHostDetail();
+  </script>
+</body>
+</html>

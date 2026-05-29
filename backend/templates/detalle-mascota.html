@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>HuellaHome - Detalle mascota</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/static/estilos.css">
+</head>
+<body>
+  <main class="page">
+    <header class="app-header">
+      <button class="back-btn" onclick="window.location.href='/'">←</button>
+      <span class="app-title">Detalle mascota</span>
+      <span></span>
+    </header>
+
+    <section id="pet-detail"></section>
+  </main>
+
+  <script>
+    const API_BASE = "";
+    const container = document.getElementById('pet-detail');
+
+    function getMascotaSeleccionada() {
+      try {
+        return JSON.parse(localStorage.getItem('mascotaSeleccionada'));
+      } catch (e) {
+        return null;
+      }
+    }
+
+    async function renderPetDetail() {
+      if (!container) return;
+
+      const mascotaSeleccionada = getMascotaSeleccionada();
+
+      if (!mascotaSeleccionada || !mascotaSeleccionada.id) {
+        container.innerHTML = '<p>No se encontró la información de la mascota.</p>';
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/mascotas/${mascotaSeleccionada.id}`);
+        const pet = await response.json();
+
+        if (!response.ok) {
+          container.innerHTML = '<p>No se pudo cargar el detalle de la mascota.</p>';
+          return;
+        }
+
+        const foto = pet.foto || '/static/img/registro-mascotas.png';
+
+        const responsable = pet.responsable || {};
+        const responsableNombre = responsable.nombre || 'No registrado';
+
+        container.innerHTML = `
+          <section style="margin-bottom:16px;text-align:center;">
+            <img src="${foto}" alt="Foto mascota"
+                 style="border-radius:50%;max-width:220px;width:220px;height:220px;object-fit:cover;box-shadow:0 10px 25px rgba(0,0,0,0.12);">
+          </section>
+
+          <section class="host-section">
+            <div class="host-section-header">
+              <span>${pet.nombre || 'Sin nombre'}</span>
+            </div>
+            <p class="host-section-text">
+              <strong>Raza:</strong> ${pet.raza || 'No registrada.'}<br>
+              <strong>Edad:</strong> ${pet.edad || 'No registrada.'}
+            </p>
+          </section>
+
+          <section class="host-section">
+            <div class="host-section-header">
+              <span>Salud y convivencia</span>
+            </div>
+            <p class="host-section-text">
+              <strong>Vacunas:</strong> ${pet.vacunas || 'No registradas.'}<br>
+              ${pet.convive === 'si' ? 'Convive con otras mascotas.' : 'No convive con otras mascotas o no registrado.'}
+            </p>
+          </section>
+
+          <section class="host-section">
+            <div class="host-section-header">
+              <span>Notas de comportamiento</span>
+            </div>
+            <p class="host-section-text">
+              ${pet.notas || 'No se han agregado notas de comportamiento.'}
+            </p>
+          </section>
+
+          <section class="host-section">
+            <div class="host-section-header">
+              <span>Responsable de la mascota</span>
+            </div>
+            <p class="host-section-text">
+              <strong>Nombre:</strong> ${responsableNombre}
+            </p>
+          </section>
+        `;
+
+      } catch (error) {
+        console.error('Error cargando detalle de mascota:', error);
+        container.innerHTML = '<p>Error de conexión cargando el detalle de la mascota.</p>';
+      }
+    }
+
+    renderPetDetail();
+  </script>
+</body>
+</html>

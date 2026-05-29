@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>HuellaHome - Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/static/estilos.css">
+  <style>
+    .chat-page {
+      display: flex;
+      flex-direction: column;
+      height: 85vh;
+    }
+
+    .chat-header-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--brown);
+      margin: 0;
+    }
+
+    .chat-box {
+      flex: 1;
+      overflow-y: auto;
+      background: #f7f3ec;
+      border-radius: 20px;
+      padding: 14px;
+      margin-bottom: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .chat-message {
+      max-width: 78%;
+      padding: 10px 14px;
+      border-radius: 18px;
+      font-size: 0.92rem;
+      line-height: 1.35;
+      word-wrap: break-word;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.05);
+    }
+
+    .chat-message.mine {
+      align-self: flex-end;
+      background: #d66d46;
+      color: #fff;
+      border-bottom-right-radius: 6px;
+    }
+
+    .chat-message.other {
+      align-self: flex-start;
+      background: #ffffff;
+      color: var(--text);
+      border-bottom-left-radius: 6px;
+    }
+
+    .chat-meta {
+      display: block;
+      margin-top: 6px;
+      font-size: 0.72rem;
+      opacity: 0.75;
+    }
+
+    .chat-form {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .chat-input {
+      flex: 1;
+      border: 1px solid #ddd;
+      border-radius: 999px;
+      padding: 12px 14px;
+      font-size: 0.95rem;
+      outline: none;
+      background: #fff;
+    }
+
+    .chat-input:focus {
+      border-color: #ffb46a;
+      box-shadow: 0 0 0 3px rgba(255, 180, 106, 0.18);
+    }
+
+    .chat-send-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 12px 18px;
+      background: #ff7f50;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .chat-empty {
+      text-align: center;
+      color: var(--muted);
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body class="auth-body">
+  <main class="auth-page">
+    <section class="auth-card chat-page">
+
+      <header class="app-header" style="margin-bottom:16px;">
+        <button class="back-btn" onclick="window.history.back()">←</button>
+        <h1 class="chat-header-title" id="chat-title">Chat</h1>
+        <span style="width:32px;"></span>
+      </header>
+
+      <div id="chat-box" class="chat-box">
+        <p class="chat-empty">Cargando conversación...</p>
+      </div>
+
+      <form id="chat-form" class="chat-form">
+        <input
+          type="text"
+          id="chat-input"
+          class="chat-input"
+          placeholder="Escribe un mensaje..."
+          autocomplete="off"
+        >
+        <button type="submit" class="chat-send-btn">Enviar</button>
+      </form>
+
+    </section>
+  </main>
+
+  <script>
+    const API_BASE = "";
+
+    function getUsuarioActual() {
+      try {
+        return JSON.parse(localStorage.getItem("usuarioActual"));
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function getAccessToken() {
+      return localStorage.getItem("access_token");
+    }
+
+    function obtenerOtroUsuarioId() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("usuario_id");
+    }
+
+    function formatearFecha(fechaIso) {
+      const fechaStr = fechaIso.endsWith("Z") ? fechaIso : fechaIso + "Z"
+      const fecha = new Date(fechaStr);
+      return fecha.toLocaleString("es-CO", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "America/Bogota"
+      });
+    }
+
+    async function cargarNombreChat(otroUsuarioId) {
+      const chatTitle = document.getElementById("chat-title");
+
+      try {
+        const response = await fetch(`${API_BASE}/usuarios/${otroUsuarioId}`);
+        const usuario = await response.json();
+
+        if (response.ok && usuario?.nombre) {
+          chatTitle.textContent = `Chat con ${usuario.nombre}`;
+        } else {
+          chatTitle.textContent = "Chat";
+        }
+      } catch (error) {
+        chatTitle.textContent = "Chat";
+      }
+    }
+
+    async function cargarConversacion() {
+      const usuarioActual = getUsuarioActual();
+      const token = getAccessToken();
+      const otroUsuarioId = obtenerOtroUsuarioId();
+      const chatBox = document.getElementById("chat-box");
+
+      if (!usuarioActual || !usuarioActual.id || !token || !otroUsuarioId) {
+        chatBox.innerHTML = `<p class="chat-empty">No se pudo cargar la conversación.</p>`;
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/mensajes/conversacion/${otroUsuarioId}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        const mensajes = await response.json();
+
+        if (response.status === 401) {
+           alert("Tu sesión expiró. Vuelve a iniciar sesión.");
+           localStorage.removeItem("usuarioActual");
+           localStorage.removeItem("access_token");
+           window.location.href = "/auth";
+           return;
+        }
+
+        if (!response.ok) {
+           chatBox.innerHTML = `<p class="chat-empty">No se pudieron cargar los mensajes.</p>`;
+           return;
+        }
+
+        if (!mensajes.length) {
+          chatBox.innerHTML = `<p class="chat-empty">Aún no hay mensajes. Inicia la conversación.</p>`;
+          return;
+        }
+
+        chatBox.innerHTML = "";
+
+        mensajes.forEach((mensaje) => {
+          const div = document.createElement("div");
+          div.className = `chat-message ${mensaje.emisor_id === usuarioActual.id ? "mine" : "other"}`;
+
+          div.innerHTML = `
+            <div>${mensaje.contenido}</div>
+            <span class="chat-meta">${formatearFecha(mensaje.fecha_envio)}</span>
+          `;
+
+          chatBox.appendChild(div);
+        });
+
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+      } catch (error) {
+        console.error("Error cargando conversación:", error);
+        chatBox.innerHTML = `<p class="chat-empty">Error de conexión al cargar mensajes.</p>`;
+      }
+    }
+
+    async function enviarMensaje(e) {
+      e.preventDefault();
+
+      const token = getAccessToken();
+      const otroUsuarioId = obtenerOtroUsuarioId();
+      const input = document.getElementById("chat-input");
+      const contenido = input.value.trim();
+
+      if (!token || !otroUsuarioId) {
+        alert("No se pudo identificar el chat.");
+        return;
+      }
+
+      if (!contenido) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/mensajes`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            receptor_id: Number(otroUsuarioId),
+            contenido
+          })
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+       if (response.status === 401) {
+           alert("Tu sesión expiró. Vuelve a iniciar sesión.");
+           localStorage.removeItem("usuarioActual");
+           localStorage.removeItem("access_token");
+           window.location.href = "/auth";
+           return;
+        }
+
+        if (!response.ok) {
+            alert(data.detail || "No se pudo enviar el mensaje.");
+            return;
+        }
+
+        input.value = "";
+        await cargarConversacion();
+
+      } catch (error) {
+        console.error("Error enviando mensaje:", error);
+        alert("Error de conexión al enviar el mensaje.");
+      }
+    }
+
+    (async function iniciarChat() {
+      const usuarioActual = getUsuarioActual();
+      const otroUsuarioId = obtenerOtroUsuarioId();
+
+      if (!usuarioActual || !usuarioActual.id) {
+        window.location.href = "/auth";
+        return;
+      }
+
+      if (!otroUsuarioId) {
+        alert("Chat inválido.");
+        window.location.href = "/";
+        return;
+      }
+
+      await cargarNombreChat(otroUsuarioId);
+      await cargarConversacion();
+    })();
+
+    const chatForm = document.getElementById("chat-form");
+    if (chatForm) {
+      chatForm.addEventListener("submit", enviarMensaje);
+    }
+  </script>
+</body>
+</html>

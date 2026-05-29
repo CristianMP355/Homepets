@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>HuellaHome - Cuidado amoroso para tu mascota</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/static/estilos.css">
+</head>
+<body>
+  <main class="page">
+
+    <button id="btn-logout" class="logout-btn">Salir</button>
+
+    <header class="app-header">
+      <div class="logo-wrap">
+        <div class="logo-icon">🐾</div>
+        <span class="app-title">HomePets</span>
+      </div>
+
+      <button id="btn-perfil-usuario" class="profile-btn" aria-label="Perfil de usuario">
+        <img
+          src="/static/img/usuario1.jpg"
+          alt="Perfil de usuario"
+          class="profile-img"
+          id="header-profile-img"
+        >
+      </button>
+    </header>
+
+    <section style="margin-bottom:24px;">
+      <div style="position:relative;">
+        <input
+          id="input-busqueda-ciudad"
+          class="input-pill"
+          type="text"
+          placeholder="¿Dónde quieres dejar a tu mascota?"
+          autocomplete="off"
+        >
+
+        <div
+          id="sugerencias-ciudad"
+          style="
+            display:none;
+            position:absolute;
+            top:100%;
+            left:0;
+            right:0;
+            margin-top:6px;
+            background:#fff;
+            border:1px solid #e8d7c5;
+            border-radius:16px;
+            box-shadow:0 8px 24px rgba(0,0,0,0.08);
+            z-index:20;
+            overflow:hidden;
+          "
+        ></div>
+      </div>
+
+  <div style="display:flex;gap:8px;margin-top:12px;">
+  <button class="chip chip-ghost" id="btn-pet">🐶 Mascotas</button>
+
+  <button id="btn-mis-chats" class="btn-chats">
+    💬 Mis chats
+    <span id="badge-no-leidos" class="badge-no-leidos" style="display: none;">0</span>
+  </button>
+</div>
+
+    <div class="calendar-overlay" id="pets-modal">
+      <div class="calendar-box">
+        <div class="calendar-header">
+          <span>Mascotas guardadas</span>
+          <button class="calendar-close" id="pets-close">✕</button>
+        </div>
+        <div id="pets-list"></div>
+      </div>
+    </div>
+
+    <div class="calendar-overlay" id="mis-chats-modal">
+  <div class="calendar-box">
+    <div class="calendar-header">
+      <span>Mis chats</span>
+      <button class="calendar-close" id="mis-chats-close">✕</button>
+    </div>
+    <div id="mis-chats-list"></div>
+  </div>
+</div>
+
+<div class="calendar-overlay" id="chat-modal">
+  <div class="calendar-box" style="max-width: 520px; width: 100%;">
+    <div class="calendar-header">
+      <span id="chat-titulo">Conversación</span>
+      <button class="calendar-close" id="chat-close">✕</button>
+    </div>
+
+    <div
+      id="chat-mensajes"
+      style="
+        max-height: 420px;
+        overflow-y: auto;
+        padding: 12px;
+        background: #fffaf5;
+        border-radius: 14px;
+        margin-bottom: 12px;
+      "
+    ></div>
+
+    <form id="chat-form" style="display:flex;gap:8px;align-items:center;">
+      <input
+        type="text"
+        id="chat-input"
+        placeholder="Escribe un mensaje..."
+        class="input-pill"
+        style="flex:1;"
+      >
+      <button type="submit" class="chip">Enviar</button>
+    </form>
+  </div>
+</div>
+
+    <section style="margin-bottom:24px;">
+      <h2 style="font-size:1.2rem;margin-bottom:12px;">CEO'S (Anfitriones)</h2>
+      <div style="display:flex;gap:14px;overflow-x:auto;padding-bottom:8px;">
+        <article class="card" style="min-width:220px;background:#ffe8c1;">
+          <img src="/static/img/FOTO_NATA.jpg" alt="Foto de Natalia" class="card-img">
+          <div style="padding:12px 14px 14px;">
+            <h3 style="font-size:1rem;margin-bottom:4px;">Natalia Muñoz</h3>
+            <p style="margin:0 6px;font-size:0.9rem;color:var(--muted);">
+              Psicóloga Magíster (ICESI)
+            </p>
+          </div>
+        </article>
+
+        <article class="card" style="min-width:220px;background:#ffe8c1;">
+          <img src="/static/img/FOTO_PIPE.jpg" alt="Foto de Felipe" class="card-img">
+          <div style="padding:12px 14px 14px;">
+            <h3 style="font-size:1rem;margin-bottom:4px;">Felipe Romero</h3>
+            <p style="margin:0 6px;font-size:0.9rem;color:var(--muted);">
+              Médico Veterinario Zootecnista (Universidad de Caldas)
+            </p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section style="margin-bottom:24px;">
+      <h2 style="font-size:1.1rem;margin-bottom:12px;">Anfitriones de la comunidad</h2>
+      <div id="host-list" style="display:flex;gap:14px;overflow-x:auto;padding-bottom:8px;"></div>
+    </section>
+
+    <div class="fab-wrap">
+      <button class="fab" id="btn-add-pet" aria-label="Agregar">
+        +
+      </button>
+    </div>
+
+  </main>
+
+  <button
+    class="btn-primary"
+    style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);max-width:380px;"
+    id="btn-publicar"
+  >
+    Publicar mi hogar
+  </button>
+
+  <script>
+    const API_BASE = "";
+
+    function getUsuarioActual() {
+      try {
+        return JSON.parse(localStorage.getItem("usuarioActual"));
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function getAccessToken() {
+      return localStorage.getItem("access_token");
+    }
+
+    function cerrarSesion() {
+      localStorage.removeItem("usuarioActual");
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("anfitrionActual");
+      localStorage.removeItem("anfitrionSeleccionado");
+      localStorage.removeItem("anfitrionEditar");
+      localStorage.removeItem("mascotaSeleccionada");
+      window.location.href = "/auth";
+    }
+
+    function cargarFotoHeaderUsuario() {
+      const usuario = getUsuarioActual();
+      const imgHeader = document.getElementById("header-profile-img");
+
+      if (!usuario || !imgHeader) return;
+
+      if (usuario.foto_user && usuario.foto_user.trim() !== "") {
+        imgHeader.src = usuario.foto_user;
+      } else {
+        imgHeader.src = "/static/img/usuario1.jpg";
+      }
+    }
+
+    function obtenerFotoAnfitrion(host) {
+      if (host.foto && host.foto.trim() !== "") {
+        return host.foto;
+      }
+      return "/static/img/anfitrion.jpg";
+    }
+
+    function obtenerFotoMascota(pet) {
+      if (pet.foto && pet.foto.trim() !== "") {
+        return pet.foto;
+      }
+      return "/static/img/registro-mascotas.png";
+    }
+
+    async function cargarAnfitriones(ciudad = "") {
+      const hostList = document.getElementById("host-list");
+      if (!hostList) return;
+
+      hostList.innerHTML = "<p>Cargando anfitriones...</p>";
+
+      try {
+        let url = `${API_BASE}/anfitriones`;
+
+        if (ciudad && ciudad.trim() !== "") {
+          url += `?ciudad=${encodeURIComponent(ciudad.trim())}`;
+        }
+
+        const response = await fetch(url);
+        const anfitriones = await response.json();
+
+        if (!response.ok) {
+          hostList.innerHTML = "<p>No se pudieron cargar los anfitriones.</p>";
+          return;
+        }
+
+        if (!anfitriones.length) {
+          hostList.innerHTML = ciudad && ciudad.trim() !== ""
+            ? "<p>No hay anfitriones disponibles en esa ciudad.</p>"
+            : "<p>Aún no hay anfitriones registrados.</p>";
+          return;
+        }
+
+        hostList.innerHTML = "";
+
+        anfitriones.forEach((host) => {
+          const article = document.createElement("article");
+          article.className = "card";
+          article.style.minWidth = "220px";
+          article.style.background = "#ffe8c1";
+          article.style.cursor = "pointer";
+
+          const foto = obtenerFotoAnfitrion(host);
+
+          article.innerHTML = `
+            <img src="${foto}" alt="Foto de ${host.nombre}" class="card-img">
+            <div style="padding:12px 14px 14px;">
+              <h3 style="font-size:1rem;margin-bottom:4px;">${host.nombre}</h3>
+
+              <p style="margin:0 0 6px;font-size:0.9rem;color:var(--muted);">
+                ${host.direccion || "Dirección no especificada"}
+              </p>
+
+              <button
+                class="chip chip-ghost btn-ver-ubicacion"
+                style="margin-bottom:8px;font-size:0.82rem;"
+                type="button"
+              >
+                📍 Ver ubicación
+              </button>
+
+              <p style="margin:0;font-size:0.9rem;color:var(--muted);">
+                ${host.descripcion || "Sin descripción"}
+              </p>
+            </div>
+          `;
+
+          const btnUbicacion = article.querySelector(".btn-ver-ubicacion");
+          if (btnUbicacion) {
+            btnUbicacion.addEventListener("click", (e) => {
+              e.stopPropagation();
+
+              if (!host.direccion || host.direccion.trim() === "") {
+                alert("Este anfitrión no tiene dirección registrada.");
+                return;
+              }
+
+              const direccion = encodeURIComponent(host.direccion);
+              const urlMaps = `https://www.google.com/maps/search/?api=1&query=${direccion}`;
+              window.open(urlMaps, "_blank");
+            });
+          }
+
+          article.addEventListener("click", () => {
+            localStorage.setItem("anfitrionSeleccionado", JSON.stringify(host));
+            window.location.href = "/detalle-anfitrion";
+          });
+
+          hostList.appendChild(article);
+        });
+
+      } catch (error) {
+        console.error("Error cargando anfitriones:", error);
+        hostList.innerHTML = "<p>Error de conexión al cargar anfitriones.</p>";
+      }
+    }
+
+    async function obtenerMisMascotas() {
+      const token = getAccessToken();
+
+      if (!token) {
+        return [];
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/mascotas/mis-mascotas`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("No se pudieron obtener las mascotas");
+        }
+
+        return await response.json();
+      } catch (error) {
+        console.error("Error al obtener mis mascotas:", error);
+        return [];
+      }
+    }
+
+    function renderizarMascotasEnModal(mascotas) {
+      const petsList = document.getElementById("pets-list");
+      if (!petsList) return;
+
+      if (!mascotas || mascotas.length === 0) {
+        petsList.innerHTML = `
+          <p style="margin:0;color:var(--muted);">
+            Aún no has registrado mascotas.
+          </p>
+        `;
+        return;
+      }
+
+      petsList.innerHTML = "";
+
+      mascotas.forEach((pet) => {
+        const petCard = document.createElement("article");
+        petCard.className = "card";
+        petCard.style.marginBottom = "12px";
+        petCard.style.cursor = "pointer";
+
+        const foto = obtenerFotoMascota(pet);
+
+        petCard.innerHTML = `
+          <div style="display:flex;gap:12px;align-items:center;padding:12px;">
+            <img
+              src="${foto}"
+              alt="Foto de ${pet.nombre}"
+              style="width:72px;height:72px;border-radius:50%;object-fit:cover;"
+            >
+            <div>
+              <h3 style="margin:0 0 6px;font-size:1rem;">${pet.nombre || "Sin nombre"}</h3>
+              <p style="margin:0;font-size:0.9rem;color:var(--muted);">
+                <strong>Raza:</strong> ${pet.raza || "No registrada"}
+              </p>
+              <p style="margin:4px 0 0;font-size:0.9rem;color:var(--muted);">
+                <strong>Edad:</strong> ${pet.edad || "No registrada"}
+              </p>
+            </div>
+          </div>
+        `;
+
+        petCard.addEventListener("click", () => {
+          localStorage.setItem("mascotaSeleccionada", JSON.stringify(pet));
+          window.location.href = "/detalle-mascota";
+        });
+
+        petsList.appendChild(petCard);
+      });
+    }
+
+    async function abrirModalMascotas() {
+      const modal = document.getElementById("pets-modal");
+      const petsList = document.getElementById("pets-list");
+
+      if (!modal || !petsList) return;
+
+      petsList.innerHTML = "<p>Cargando mascotas...</p>";
+      modal.classList.add("active");
+
+      const mascotas = await obtenerMisMascotas();
+      renderizarMascotasEnModal(mascotas);
+    }
+
+    function cerrarModalMascotas() {
+      const modal = document.getElementById("pets-modal");
+      if (!modal) return;
+      modal.classList.remove("active");
+    }
+
+
+    let chatUsuarioActualAbierto = null;
+
+function obtenerFotoUsuarioChat(chat) {
+  if (chat.foto_user && chat.foto_user.trim() !== "") {
+    return chat.foto_user;
+  }
+  return "/static/img/usuario1.jpg";
+}
+
+async function cargarContadorNoLeidos() {
+  const token = getAccessToken();
+  const badge = document.getElementById("badge-no-leidos");
+
+  if (!badge || !token) return;
+
+  try {
+    const response = await fetch(`${API_BASE}/mensajes/no-leidos`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      badge.style.display = "none";
+      return;
+    }
+
+    const data = await response.json();
+    const total = data.total_no_leidos || 0;
+
+    if (total > 0) {
+      badge.textContent = total;
+      badge.style.display = "inline-flex";
+    } else {
+      badge.style.display = "none";
+    }
+  } catch (error) {
+    console.error("Error cargando contador de no leídos:", error);
+    badge.style.display = "none";
+  }
+}
+
+async function obtenerMisChats() {
+  const token = getAccessToken();
+
+  if (!token) return [];
+
+  try {
+    const response = await fetch(`${API_BASE}/mensajes/mis-chats`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error("No se pudieron cargar los chats");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error obteniendo mis chats:", error);
+    return [];
+  }
+}
+
+function renderizarMisChats(chats) {
+  const contenedor = document.getElementById("mis-chats-list");
+  if (!contenedor) return;
+
+  if (!chats || chats.length === 0) {
+    contenedor.innerHTML = `
+      <p style="margin:0;color:var(--muted);">
+        Aún no tienes conversaciones.
+      </p>
+    `;
+    return;
+  }
+
+  contenedor.innerHTML = "";
+
+  chats.forEach((chat) => {
+    const card = document.createElement("article");
+    card.className = "card";
+    card.style.marginBottom = "12px";
+    card.style.cursor = "pointer";
+
+    const foto = obtenerFotoUsuarioChat(chat);
+
+    card.innerHTML = `
+      <div style="display:flex;gap:12px;align-items:center;padding:12px;">
+        <img
+          src="${foto}"
+          alt="Foto de ${chat.nombre}"
+          style="width:60px;height:60px;border-radius:50%;object-fit:cover;"
+        >
+        <div style="flex:1;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <h3 style="margin:0;font-size:1rem;">${chat.nombre}</h3>
+            ${chat.no_leidos > 0 ? `
+              <span style="
+                min-width:22px;
+                height:22px;
+                padding:0 7px;
+                border-radius:999px;
+                background:#ff5a5f;
+                color:white;
+                font-size:12px;
+                display:inline-flex;
+                align-items:center;
+                justify-content:center;
+                font-weight:700;
+              ">
+                ${chat.no_leidos}
+              </span>
+            ` : ""}
+          </div>
+
+          <p style="margin:6px 0 0;font-size:0.9rem;color:var(--muted);">
+            ${chat.ultimo_mensaje || "Sin mensajes"}
+          </p>
+        </div>
+      </div>
+    `;
+
+    card.addEventListener("click", async () => {
+      await abrirChat(chat.usuario_id, chat.nombre);
+    });
+
+    contenedor.appendChild(card);
+  });
+}
+
+async function abrirModalMisChats() {
+  const modal = document.getElementById("mis-chats-modal");
+  const lista = document.getElementById("mis-chats-list");
+
+  if (!modal || !lista) return;
+
+  lista.innerHTML = "<p>Cargando chats.</p>";
+  modal.classList.add("active");
+
+  const chats = await obtenerMisChats();
+  renderizarMisChats(chats);
+}
+
+function cerrarModalMisChats() {
+  const modal = document.getElementById("mis-chats-modal");
+  if (!modal) return;
+  modal.classList.remove("active");
+}
+
+async function obtenerConversacion(otroUsuarioId) {
+  const token = getAccessToken();
+
+  if (!token) return [];
+
+  try {
+    const response = await fetch(`${API_BASE}/mensajes/conversacion/${otroUsuarioId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error("No se pudo obtener la conversación");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error obteniendo conversación:", error);
+    return [];
+  }
+}
+
+function renderizarConversacion(mensajes) {
+  const contenedor = document.getElementById("chat-mensajes");
+  const usuario = getUsuarioActual();
+
+  if (!contenedor || !usuario) return;
+
+  contenedor.innerHTML = "";
+
+  if (!mensajes || mensajes.length === 0) {
+    contenedor.innerHTML = `
+      <p style="margin:0;color:var(--muted);">
+        Aún no hay mensajes en esta conversación.
+      </p>
+    `;
+    return;
+  }
+
+  mensajes.forEach((msg) => {
+    const esMio = Number(msg.emisor_id) === Number(usuario.id);
+
+    const burbuja = document.createElement("div");
+    burbuja.style.display = "flex";
+    burbuja.style.justifyContent = esMio ? "flex-end" : "flex-start";
+    burbuja.style.marginBottom = "10px";
+
+    burbuja.innerHTML = `
+      <div style="
+        max-width:75%;
+        padding:10px 12px;
+        border-radius:16px;
+        background:${esMio ? "#ffd8a8" : "#ffffff"};
+        border:1px solid #f0e1d2;
+        box-shadow:0 2px 8px rgba(0,0,0,0.04);
+      ">
+        <div style="font-size:0.95rem;color:#333;">
+          ${msg.contenido}
+        </div>
+        <div style="margin-top:6px;font-size:0.75rem;color:#777;text-align:right;">
+          ${new Date(msg.fecha_envio).toLocaleString()}
+          ${esMio ? ` · ${msg.leido ? "✓✓ Leído" : "✓ Enviado"}` : ""}
+        </div>
+      </div>
+    `;
+
+    contenedor.appendChild(burbuja);
+  });
+
+  contenedor.scrollTop = contenedor.scrollHeight;
+}
+
+async function abrirChat(otroUsuarioId, nombreUsuario) {
+  const modal = document.getElementById("chat-modal");
+  const titulo = document.getElementById("chat-titulo");
+
+  if (!modal || !titulo) return;
+
+  chatUsuarioActualAbierto = otroUsuarioId;
+  titulo.textContent = `Chat con ${nombreUsuario}`;
+  modal.classList.add("active");
+
+  const mensajes = await obtenerConversacion(otroUsuarioId);
+  renderizarConversacion(mensajes);
+
+  await cargarContadorNoLeidos();
+
+  const modalMisChats = document.getElementById("mis-chats-modal");
+  if (modalMisChats && modalMisChats.classList.contains("active")) {
+    const chats = await obtenerMisChats();
+    renderizarMisChats(chats);
+  }
+}
+
+function cerrarChat() {
+  const modal = document.getElementById("chat-modal");
+  if (!modal) return;
+  modal.classList.remove("active");
+  chatUsuarioActualAbierto = null;
+}
+
+async function enviarMensajeChat(e) {
+  e.preventDefault();
+
+  const input = document.getElementById("chat-input");
+  const usuarioDestino = chatUsuarioActualAbierto;
+  const token = getAccessToken();
+
+  if (!input || !usuarioDestino || !token) return;
+
+  const contenido = input.value.trim();
+  if (!contenido) return;
+
+  try {
+    const response = await fetch(`${API_BASE}/mensajes`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        receptor_id: usuarioDestino,
+        contenido
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error("No se pudo enviar el mensaje");
+    }
+
+    input.value = "";
+
+    const mensajes = await obtenerConversacion(usuarioDestino);
+    renderizarConversacion(mensajes);
+
+    const chats = await obtenerMisChats();
+    renderizarMisChats(chats);
+
+    await cargarContadorNoLeidos();
+  } catch (error) {
+    console.error("Error enviando mensaje:", error);
+    alert("No se pudo enviar el mensaje.");
+  }
+}
+
+    let timeoutSugerencias = null;
+
+    async function obtenerSugerenciasCiudad(texto) {
+      if (!texto || texto.trim().length < 2) {
+        return [];
+      }
+
+      try {
+        const response = await fetch(
+          `${API_BASE}/ciudades-sugeridas?q=${encodeURIComponent(texto.trim())}`
+        );
+
+        if (!response.ok) {
+          return [];
+        }
+
+        return await response.json();
+      } catch (error) {
+        console.error("Error obteniendo sugerencias:", error);
+        return [];
+      }
+    }
+
+    function ocultarSugerenciasCiudad() {
+      const contenedor = document.getElementById("sugerencias-ciudad");
+      if (!contenedor) return;
+
+      contenedor.style.display = "none";
+      contenedor.innerHTML = "";
+    }
+
+    function mostrarSugerenciasCiudad(sugerencias) {
+      const contenedor = document.getElementById("sugerencias-ciudad");
+      const inputBusquedaCiudad = document.getElementById("input-busqueda-ciudad");
+
+      if (!contenedor || !inputBusquedaCiudad) return;
+
+      if (!sugerencias || sugerencias.length === 0) {
+        ocultarSugerenciasCiudad();
+        return;
+      }
+
+      contenedor.innerHTML = "";
+
+      sugerencias.forEach((sugerencia) => {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.textContent = sugerencia;
+
+        item.style.width = "100%";
+        item.style.textAlign = "left";
+        item.style.padding = "12px 16px";
+        item.style.border = "none";
+        item.style.background = "#fff";
+        item.style.cursor = "pointer";
+        item.style.fontSize = "0.95rem";
+
+        item.addEventListener("mouseenter", () => {
+          item.style.background = "#fff6ec";
+        });
+
+        item.addEventListener("mouseleave", () => {
+          item.style.background = "#fff";
+        });
+
+        item.addEventListener("click", () => {
+          inputBusquedaCiudad.value = sugerencia;
+          ocultarSugerenciasCiudad();
+          cargarAnfitriones(sugerencia);
+        });
+
+        contenedor.appendChild(item);
+      });
+
+      contenedor.style.display = "block";
+    }
+
+    function inicializarBusquedaCiudad() {
+      const inputBusquedaCiudad = document.getElementById("input-busqueda-ciudad");
+
+      if (!inputBusquedaCiudad) return;
+
+      inputBusquedaCiudad.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          ocultarSugerenciasCiudad();
+          cargarAnfitriones(inputBusquedaCiudad.value);
+        }
+      });
+
+      inputBusquedaCiudad.addEventListener("input", () => {
+        const valor = inputBusquedaCiudad.value.trim();
+
+        clearTimeout(timeoutSugerencias);
+
+        if (valor === "") {
+          ocultarSugerenciasCiudad();
+          cargarAnfitriones();
+          return;
+        }
+
+        timeoutSugerencias = setTimeout(async () => {
+          const sugerencias = await obtenerSugerenciasCiudad(valor);
+          mostrarSugerenciasCiudad(sugerencias);
+        }, 250);
+      });
+
+      document.addEventListener("click", (e) => {
+        const contenedor = document.getElementById("sugerencias-ciudad");
+
+        if (
+          contenedor &&
+          e.target !== inputBusquedaCiudad &&
+          !contenedor.contains(e.target)
+        ) {
+          ocultarSugerenciasCiudad();
+        }
+      });
+    }
+
+(function () {
+  const usuario = getUsuarioActual();
+  if (!usuario || !usuario.id) {
+    window.location.href = "/auth";
+    return;
+  }
+
+  cargarFotoHeaderUsuario();
+  cargarAnfitriones();
+  inicializarBusquedaCiudad();
+  cargarContadorNoLeidos();
+})();
+
+    const btnPerfilUsuario = document.getElementById("btn-perfil-usuario");
+    if (btnPerfilUsuario) {
+      btnPerfilUsuario.addEventListener("click", () => {
+        window.location.href = "/perfil-usuario";
+      });
+    }
+
+    const btnLogout = document.getElementById("btn-logout");
+    if (btnLogout) {
+      btnLogout.addEventListener("click", cerrarSesion);
+    }
+
+    const btnAddPet = document.getElementById("btn-add-pet");
+    if (btnAddPet) {
+      btnAddPet.addEventListener("click", () => {
+        window.location.href = "/perfil-mascota";
+      });
+    }
+
+    const btnPublicar = document.getElementById("btn-publicar");
+    if (btnPublicar) {
+      btnPublicar.addEventListener("click", () => {
+        window.location.href = "/perfil-anfitrion";
+      });
+    }
+
+    const btnPet = document.getElementById("btn-pet");
+    if (btnPet) {
+      btnPet.addEventListener("click", abrirModalMascotas);
+    }
+
+    const petsClose = document.getElementById("pets-close");
+    if (petsClose) {
+      petsClose.addEventListener("click", cerrarModalMascotas);
+    }
+
+    const btnMisChats = document.getElementById("btn-mis-chats");
+if (btnMisChats) {
+  btnMisChats.addEventListener("click", abrirModalMisChats);
+}
+
+const misChatsClose = document.getElementById("mis-chats-close");
+if (misChatsClose) {
+  misChatsClose.addEventListener("click", cerrarModalMisChats);
+}
+
+const misChatsModal = document.getElementById("mis-chats-modal");
+if (misChatsModal) {
+  misChatsModal.addEventListener("click", (e) => {
+    if (e.target === misChatsModal) {
+      cerrarModalMisChats();
+    }
+  });
+}
+
+const chatClose = document.getElementById("chat-close");
+if (chatClose) {
+  chatClose.addEventListener("click", cerrarChat);
+}
+
+const chatModal = document.getElementById("chat-modal");
+if (chatModal) {
+  chatModal.addEventListener("click", (e) => {
+    if (e.target === chatModal) {
+      cerrarChat();
+    }
+  });
+}
+
+const chatForm = document.getElementById("chat-form");
+if (chatForm) {
+  chatForm.addEventListener("submit", enviarMensajeChat);
+}
+
+    const petsModal = document.getElementById("pets-modal");
+    if (petsModal) {
+      petsModal.addEventListener("click", (e) => {
+        if (e.target === petsModal) {
+          cerrarModalMascotas();
+        }
+      });
+    }
+  </script>
+
+</body>
+</html>

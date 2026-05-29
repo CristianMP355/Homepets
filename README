@@ -1,0 +1,139 @@
+# 🐾 HomePets
+
+HomePets es una plataforma web desarrollada con FastAPI que permite conectar usuarios con anfitriones que ofrecen servicios de cuidado para mascotas.
+
+---
+
+## 🚀 Ejecución local
+
+Sigue estos pasos para correr el proyecto en tu máquina:
+
+### 1. Clonar el repositorio
+
+```bash
+git clone <URL_DEL_REPOSITORIO>
+cd HOMEPETS
+```
+
+### 2. Activar entorno virtual
+
+**Windows (PowerShell):**
+
+```bash
+.\.venv\Scripts\Activate.ps1
+```
+
+**Linux / Mac:**
+
+```bash
+source .venv/bin/activate
+```
+
+---
+
+### 3. Configurar variables de entorno
+
+Crear un archivo `.env` en la raíz del proyecto:
+
+```env
+DATABASE_URL=postgresql+asyncpg://usuario:password@localhost:5432/homepets
+```
+
+---
+
+### 4. Ejecutar el servidor
+
+```bash
+cd backend
+python -m uvicorn main:app --reload
+```
+
+---
+
+### 5. Abrir en el navegador
+
+👉 http://127.0.0.1:8000
+
+---
+
+## ⚙️ Tecnologías utilizadas
+
+* FastAPI
+* PostgreSQL
+* SQLAlchemy (Async)
+* Alembic (migraciones)
+* Jinja2 (templates)
+* Uvicorn
+* Python 3.10+
+
+---
+
+## 📁 Estructura del proyecto
+
+```
+HOMEPETS/
+│
+├── backend/
+│   ├── database/        # Configuración de base de datos
+│   ├── routers/         # Rutas de la API
+│   ├── static/          # Archivos estáticos (CSS, imágenes)
+│   ├── templates/       # Vistas HTML (Jinja2)
+│   ├── utils/           # Funciones auxiliares
+│   ├── main.py          # Punto de entrada
+│   └── requirements.txt
+│
+├── alembic/             # Migraciones de base de datos
+├── alembic.ini
+├── .env                 # Variables de entorno
+└── README.md
+```
+
+---
+
+## 🗃️ Base de datos
+
+El proyecto utiliza PostgreSQL con conexión asíncrona mediante `asyncpg`.
+
+Asegúrate de:
+
+* Tener PostgreSQL instalado
+* Crear la base de datos `homepets`
+* Configurar correctamente el `.env`
+
+---
+
+## 🔄 Migraciones (Alembic)
+
+Las migraciones se gestionan con Alembic.
+
+Para más detalles revisa:
+
+```
+alembic/README
+```
+
+---
+
+## ⚠️ Notas importantes
+
+* Ejecutar siempre el backend desde la carpeta `backend/`
+* No usar SQLite en producción
+* Verificar que `.env` esté correctamente configurado
+* Si aparece error `401 Unauthorized`, significa que el endpoint requiere autenticación (comportamiento normal)
+
+---
+
+## 👨‍💻 Autor
+
+Proyecto desarrollado como parte de aprendizaje y despliegue con FastAPI + PostgreSQL.
+
+---
+
+## 🚀 Próximos pasos
+
+* Deploy en Railway
+* Mejoras en autenticación
+* Optimización de queries
+* UI/UX enhancements
+
+---
