@@ -3,10 +3,10 @@ from sqlalchemy import select, or_, and_, desc, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 
-from database.database import get_db
-from database.models import Mensaje, Usuario
-from schemas import MensajeCreate, MensajeRead, ChatResumen, NoLeidosOut
-from utils.jwt_config import get_current_user
+from backend.database.database import get_db
+from backend.database.models import Mensaje, Usuario
+from backend.schemas import MensajeCreate, MensajeRead, ChatResumen, NoLeidosOut
+from backend.utils.jwt_config import get_current_user
 
 router = APIRouter(tags=["Mensajes"])
 

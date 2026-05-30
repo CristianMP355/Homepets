@@ -12,13 +12,12 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Fallback SOLO si no hay PostgreSQL
 if not DATABASE_URL:
-    DATABASE_URL = "sqlite+aiosqlite:///./homepets.db"
+    raise RuntimeError("La variable de entorno DATABASE_URL no está configurada")
 
 engine = create_async_engine(
     DATABASE_URL,
-    echo=True
+    echo=False
 )
 
 SessionLocal = async_sessionmaker(

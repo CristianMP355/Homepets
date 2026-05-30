@@ -10,21 +10,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy import select, func
 from backend.database.database import get_db, engine, Base
-from database.models import Anfitrion, Usuario, FotoEspacio
-from utils.jwt_config import get_current_user
+from backend.database.models import Anfitrion, Usuario, FotoEspacio
+from backend.utils.jwt_config import get_current_user
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime
-from schemas import (
+from backend.schemas import (
     AnfitrionRead,
     AnfitrionListItem,
     AnfitrionDetalle,
     FotoEspacioRead,
 )
-from routers import usuarios
-from routers import mascotas
-from routers import mensajes
+from backend.routers import usuarios
+from backend.routers import mascotas
+from backend.routers import mensajes
 
 UPLOAD_DIR_ANFITRIONES = Path("static/uploads/anfitriones")
 UPLOAD_DIR_ESPACIOS = Path("static/uploads/espacios")

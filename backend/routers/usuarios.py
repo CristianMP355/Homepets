@@ -7,10 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, EmailStr
 from typing import List
 
-from database.database import get_db
-from database.models import Usuario
-from utils.jwt_config import create_access_token, get_current_user
-from schemas import UsuarioRead
+from backend.database.database import get_db
+from backend.database.models import Usuario
+from backend.utils.jwt_config import create_access_token, get_current_user
+from backend.schemas import UsuarioRead
 
 
 router = APIRouter(prefix="/usuarios", tags=["usuarios"])

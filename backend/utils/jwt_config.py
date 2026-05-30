@@ -3,12 +3,9 @@ from jose import JWTError, jwt
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer
 from fastapi.security.http import HTTPAuthorizationCredentials
+import os
 
-# =====================================
-# CONFIGURACIÓN JWT
-# =====================================
-
-SECRET_KEY = "tu_clave_secreta"
+SECRET_KEY = os.getenv("SECRET_KEY", "tu_clave_secreta_local")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 480
 
