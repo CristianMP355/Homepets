@@ -1,3 +1,6 @@
+import re
+import unicodedata
+from contextlib import asynccontextmanager
 from pathlib import Path
 from uuid import uuid4
 
@@ -25,12 +28,38 @@ from backend.schemas import (
 from backend.routers import usuarios
 from backend.routers import mascotas
 from backend.routers import mensajes
+from backend.routers import solicitudes
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
 
 UPLOAD_DIR_ANFITRIONES = Path("static/uploads/anfitriones")
 UPLOAD_DIR_ESPACIOS = Path("static/uploads/espacios")
 
 UPLOAD_DIR_ANFITRIONES.mkdir(parents=True, exist_ok=True)
 UPLOAD_DIR_ESPACIOS.mkdir(parents=True, exist_ok=True)
+
+
+_CON_TILDE = "áàäâãéèëêíìïîóòöôõúùüûñç"
+_SIN_TILDE = "aaaaaeeeeiiiiooooouuuunc"
+
+
+def normalizar_texto(texto: str) -> str:
+    """minúsculas y sin tildes (Bogotá -> bogota)."""
+    texto = (texto or "").strip().lower()
+    return "".join(
+        c for c in unicodedata.normalize("NFD", texto)
+        if unicodedata.category(c) != "Mn"
+    )
+
+
+def sql_normalizado(columna):
+    """Equivalente SQL de normalizar_texto() usando funciones nativas (lower + translate)."""
+    return func.translate(func.lower(func.coalesce(columna, "")), _CON_TILDE, _SIN_TILDE)
 
 
 def eliminar_archivo_si_existe(ruta_relativa: str | None):
@@ -76,7 +105,7 @@ async def guardar_archivo_imagen(upload: UploadFile, carpeta: Path, prefijo: str
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="HuellaHome API")
+    app = FastAPI(title="HuellaHome API", lifespan=lifespan)
 
     app.add_middleware(
         CORSMiddleware,
@@ -86,12 +115,15 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    templates = Jinja2Templates(directory="templates")
-    app.mount("/static", StaticFiles(directory="static"), name="static")
+    templates = Jinja2Templates(directory="backend/templates")
+    # Las fotos subidas se guardan en ./static/uploads; se montan antes que /static para que tengan prioridad.
+    app.mount("/static/uploads", StaticFiles(directory="static/uploads"), name="uploads")
+    app.mount("/static", StaticFiles(directory="backend/static"), name="static")
 
     app.include_router(usuarios.router)
     app.include_router(mascotas.router)
     app.include_router(mensajes.router)
+    app.include_router(solicitudes.router)
 
     @app.get("/", response_class=HTMLResponse)
     async def root(request: Request):
@@ -125,6 +157,10 @@ def create_app() -> FastAPI:
     async def tips(request: Request):
         return templates.TemplateResponse("tips.html", {"request": request})
     
+    @app.get("/perfil-publico", response_class=HTMLResponse)
+    async def perfil_publico_page(request: Request):
+        return templates.TemplateResponse("perfil-publico.html", {"request": request})
+
     @app.get("/chat", response_class=HTMLResponse)
     async def chat(request: Request):
         return templates.TemplateResponse("chat.html", {"request": request})
@@ -160,6 +196,17 @@ def create_app() -> FastAPI:
         if anfitrion_existente:
             raise HTTPException(status_code=400, detail="Este usuario ya tiene perfil de anfitrión")
 
+        fotos_validas = [f for f in (fotos_espacio or []) if f and f.filename]
+        if not fotos_validas:
+            raise HTTPException(
+                status_code=400,
+                detail="Debes subir al menos 1 foto de tu hogar/espacio para crear el perfil de anfitrión"
+            )
+        if len(fotos_validas) > 5:
+            raise HTTPException(status_code=400, detail="Solo puedes subir máximo 5 fotos del espacio")
+        for f in fotos_validas:
+            validar_imagen(f)
+
         ruta_foto_principal = await guardar_archivo_imagen(
             foto,
             UPLOAD_DIR_ANFITRIONES,
@@ -174,14 +221,11 @@ def create_app() -> FastAPI:
             fechas_no_disponibles=fechas_no_disponibles
         )
 
-        usuario.rol = "anfitrion"
+        if usuario.rol != "admin":  # no degradar al administrador
+            usuario.rol = "anfitrion"
 
         db.add(nuevo)
         await db.flush()
-
-        fotos_validas = [f for f in (fotos_espacio or []) if f and f.filename]
-        if len(fotos_validas) > 5:
-            raise HTTPException(status_code=400, detail="Solo puedes subir máximo 5 fotos del espacio")
 
         for foto_item in fotos_validas:
             ruta_foto_espacio = await guardar_archivo_imagen(
@@ -203,11 +247,14 @@ def create_app() -> FastAPI:
         direccion: str = Form(...),
         fechas_no_disponibles: str | None = Form(None),
         foto: UploadFile | None = File(None),
+        fotos_espacio: list[UploadFile] | None = File(default=None),
         current_user: dict = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
     ):
         result = await db.execute(
-            select(Anfitrion).where(Anfitrion.id == anfitrion_id)
+            select(Anfitrion)
+            .options(selectinload(Anfitrion.fotos_espacio))
+            .where(Anfitrion.id == anfitrion_id)
         )
         anfitrion = result.scalar_one_or_none()
 
@@ -228,6 +275,21 @@ def create_app() -> FastAPI:
         if user_role != "admin" and user_id != anfitrion.usuario_id:
             raise HTTPException(status_code=403, detail="No tienes permiso para editar este perfil")
 
+        nuevas_fotos = [f for f in (fotos_espacio or []) if f and f.filename]
+        total_fotos = len(anfitrion.fotos_espacio) + len(nuevas_fotos)
+        if total_fotos == 0:
+            raise HTTPException(
+                status_code=400,
+                detail="Debes tener al menos 1 foto de tu hogar/espacio en el perfil de anfitrión"
+            )
+        if total_fotos > 5:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Máximo 5 fotos del espacio (ya tienes {len(anfitrion.fotos_espacio)})"
+            )
+        for f in nuevas_fotos:
+            validar_imagen(f)
+
         anfitrion.descripcion = descripcion.strip()
         anfitrion.direccion = direccion.strip()
         anfitrion.fechas_no_disponibles = (
@@ -244,6 +306,12 @@ def create_app() -> FastAPI:
             )
             eliminar_archivo_si_existe(anfitrion.foto)
             anfitrion.foto = nueva_ruta_foto
+
+        for foto_item in nuevas_fotos:
+            ruta = await guardar_archivo_imagen(
+                foto_item, UPLOAD_DIR_ESPACIOS, f"espacio_{anfitrion.usuario_id}"
+            )
+            db.add(FotoEspacio(anfitrion_id=anfitrion.id, ruta_foto=ruta))
 
         await db.commit()
         await db.refresh(anfitrion)
@@ -273,13 +341,12 @@ def create_app() -> FastAPI:
         )
 
         if ciudad and ciudad.strip():
-            ciudad_limpia = ciudad.strip()
-
+            # Búsqueda insensible a mayúsculas y tildes sin depender de la extensión "unaccent"
+            termino = normalizar_texto(ciudad)
+            termino = termino.replace("\\", "\\\\").replace("%", r"\%").replace("_", r"\_")
             query = query.where(
-                func.unaccent(Anfitrion.direccion).ilike(
-                    func.unaccent(f"%{ciudad_limpia}%")
-                )
-            )    
+                sql_normalizado(Anfitrion.direccion).like(f"%{termino}%")
+            )
 
         query = query.order_by(Anfitrion.id.asc())
 
@@ -341,15 +408,7 @@ def create_app() -> FastAPI:
         q: str,
         db: AsyncSession = Depends(get_db)
     ):
-        import unicodedata
-
-        def normalizar(texto: str) -> str:
-            texto = texto.lower().strip()
-            return "".join(
-                c for c in unicodedata.normalize("NFD", texto)
-                if unicodedata.category(c) != "Mn"
-            )
-
+        normalizar = normalizar_texto
         texto_busqueda = q.strip()
 
         if not texto_busqueda:
@@ -366,17 +425,16 @@ def create_app() -> FastAPI:
             if not direccion:
                 continue
 
+            # "Calle 1 #2-3, Barrio, Ciudad (Depto)" -> se sugieren barrio y ciudad (sin la calle)
             partes = [p.strip() for p in direccion.split(",") if p.strip()]
-
-            if len(partes) >= 3:
-                ciudad = partes[-2]
-            elif len(partes) == 2:
-                ciudad = partes[-1]
-            else:
-                ciudad = partes[0]
-
-            if ciudad:
-                ciudades.add(ciudad)
+            candidatas = partes[1:] if len(partes) > 1 else partes[-1:]
+            for parte in candidatas:
+                ciudad = re.sub(r"\s*\(.*?\)\s*", "", parte).strip()
+                if len(partes) == 1 and re.search(r"[#\d]", ciudad):
+                    # Dirección sin comas ("Calle 25C #35-52 Olimpico Palmira"): usar la última palabra
+                    ciudad = ciudad.split()[-1]
+                if ciudad and not re.search(r"[#\d]", ciudad):
+                    ciudades.add(ciudad)
 
         q_normalizada = normalizar(texto_busqueda)
 

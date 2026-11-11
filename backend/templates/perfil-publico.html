@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>HomePets - Perfil</title>
+  {% include "base_head.html" %}
+</head>
+<body class="app-body">
+  {% include "base_navbar.html" %}
+
+  <main class="mx-auto w-full max-w-[1200px] px-4 pb-16 pt-6 md:px-6 md:pt-10">
+
+    <header class="app-header">
+      <button class="back-btn" onclick="window.history.length > 1 ? window.history.back() : (window.location.href='/')">←</button>
+      <span class="app-title">Perfil</span>
+      <span style="width:32px;"></span>
+    </header>
+
+    <div id="perfil-publico">
+      <p>Cargando perfil...</p>
+    </div>
+  </main>
+
+  <script>
+    const API_BASE = "";
+    const cont = document.getElementById("perfil-publico");
+
+    function escapar(texto) {
+      const div = document.createElement("div");
+      div.textContent = texto == null ? "" : String(texto);
+      return div.innerHTML;
+    }
+
+    function fotoMascota(pet) {
+      return pet.foto && pet.foto.trim() !== "" ? pet.foto : "/static/img/registro-mascotas.png";
+    }
+
+    async function cargarPerfilPublico() {
+      const token = localStorage.getItem("access_token");
+      const id = new URLSearchParams(window.location.search).get("id");
+
+      if (!token) {
+        window.location.href = "/auth";
+        return;
+      }
+      if (!id) {
+        cont.innerHTML = "<p>No se indicó qué perfil mostrar.</p>";
+        return;
+      }
+
+      try {
+        const resp = await fetch(`${API_BASE}/usuarios/${encodeURIComponent(id)}/perfil-publico`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const u = await resp.json().catch(() => ({}));
+
+        if (resp.status === 401) {
+          window.location.href = "/auth";
+          return;
+        }
+        if (!resp.ok) {
+          cont.innerHTML = `<p>${escapar(u.detail || "No se pudo cargar el perfil.")}</p>`;
+          return;
+        }
+
+        document.title = `HomePets - ${u.nombre}`;
+        const foto = u.foto_user && u.foto_user.trim() !== "" ? u.foto_user : "/static/img/usuario1.jpg";
+
+        const mascotasHtml = (u.mascotas || []).length
+          ? `<div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              ${u.mascotas.map((pet, idx) => `
+                <article class="card flex cursor-pointer flex-col rounded-2xl bg-white shadow-md" data-idx="${idx}">
+                  <img src="${fotoMascota(pet)}" alt="Foto de ${escapar(pet.nombre)}" class="card-img">
+                  <div class="flex flex-col gap-1 p-4">
+                    <div class="flex items-center justify-between gap-2">
+                      <h3 class="m-0 text-base font-bold">${escapar(pet.nombre)}</h3>
+                      ${pet.tipo_mascota ? `<span class="pet-tag">${escapar(pet.tipo_mascota)}</span>` : ""}
+                    </div>
+                    <p class="m-0 text-sm text-stone-500"><strong>Raza:</strong> ${escapar(pet.raza || "No registrada")}</p>
+                    <p class="m-0 text-sm text-stone-500"><strong>Edad:</strong> ${escapar(pet.edad || "No registrada")}</p>
+                  </div>
+                </article>`).join("")}
+            </div>`
+          : `<p class="host-section-text">Este usuario aún no ha registrado mascotas.</p>`;
+
+        cont.innerHTML = `
+          <section class="mb-8 flex flex-col items-center gap-5 rounded-2xl bg-white p-6 shadow-md sm:flex-row sm:items-center md:p-8">
+            <img src="${foto}" alt="Foto de ${escapar(u.nombre)}" class="h-28 w-28 rounded-full object-cover shadow-md">
+            <div class="flex flex-1 flex-col gap-2 text-center sm:text-left">
+              <h1 class="m-0 text-2xl font-extrabold text-brand-brown">${escapar(u.nombre)}</h1>
+              <p class="m-0 text-sm text-stone-600">✉️ <a href="mailto:${escapar(u.email)}" class="text-stone-600">${escapar(u.email)}</a></p>
+              <p class="m-0 text-sm text-stone-600">📞 ${escapar(u.telefono || "Teléfono no registrado")}</p>
+              ${u.anfitrion_id ? `
+                <div class="pt-2">
+                  <button type="button" class="chip chip-inline" id="btn-ver-anfitrion">🏡 Ver su perfil de anfitrión</button>
+                </div>` : ""}
+            </div>
+          </section>
+
+          <section>
+            <h2 class="section-title">Mascotas de ${escapar(u.nombre.split(" ")[0])}</h2>
+            ${mascotasHtml}
+          </section>
+        `;
+
+        cont.querySelectorAll("article[data-idx]").forEach((card) => {
+          card.addEventListener("click", () => {
+            const pet = u.mascotas[Number(card.dataset.idx)];
+            localStorage.setItem("mascotaSeleccionada", JSON.stringify(pet));
+            window.location.href = "/detalle-mascota";
+          });
+        });
+
+        document.getElementById("btn-ver-anfitrion")?.addEventListener("click", () => {
+          localStorage.setItem("anfitrionSeleccionado", JSON.stringify({ id: u.anfitrion_id, usuario_id: u.id }));
+          window.location.href = "/detalle-anfitrion";
+        });
+      } catch (err) {
+        console.error("Error cargando perfil público:", err);
+        cont.innerHTML = "<p>Error de conexión al cargar el perfil.</p>";
+      }
+    }
+
+    cargarPerfilPublico();
+  </script>
+</body>
+</html>

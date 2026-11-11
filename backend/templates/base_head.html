@@ -1,0 +1,21 @@
+{# Recursos comunes del <head>: se incluye en todas las plantillas con {% include "base_head.html" %} #}
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script>
+  // preflight desactivado: Tailwind solo aporta utilidades y no resetea los estilos propios de estilos.css
+  tailwind.config = {
+    corePlugins: { preflight: false },
+    theme: {
+      extend: {
+        fontFamily: { sans: ['"Plus Jakarta Sans"', "system-ui", "sans-serif"] },
+        colors: {
+          brand: { DEFAULT: "#d66d46", light: "#ff8c61", brown: "#a3683a", cream: "#fdf9f2", green: "#6c8b3c" }
+        }
+      }
+    }
+  };
+</script>
+<link rel="stylesheet" href="/static/estilos.css">

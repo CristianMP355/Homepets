@@ -3,32 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <title>HuellaHome - Cuidado amoroso para tu mascota</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="/static/estilos.css">
+  {% include "base_head.html" %}
 </head>
-<body>
-  <main class="page">
+<body class="app-body">
 
-    <button id="btn-logout" class="logout-btn">Salir</button>
-
-    <header class="app-header">
-      <div class="logo-wrap">
-        <div class="logo-icon">🐾</div>
+  <!-- ── Barra superior ───────────────────────────────── -->
+  <nav class="topnav">
+    <div class="mx-auto flex max-w-[1200px] items-center justify-between gap-3 px-4 py-3 md:px-6">
+      <a href="/" class="flex items-center gap-2 no-underline">
+        <span class="logo-icon">🐾</span>
         <span class="app-title">HomePets</span>
+      </a>
+
+      <div class="flex items-center gap-2 md:gap-3">
+        <button type="button" class="nav-link" id="btn-pet">🐶 <span id="btn-pet-label" class="hidden sm:inline">Mis mascotas</span></button>
+        <button type="button" id="btn-mis-chats" class="nav-link relative">
+          💬 <span class="hidden sm:inline">Mis chats</span>
+          <span id="badge-no-leidos" class="badge-no-leidos" style="display: none;">0</span>
+        </button>
+        <button type="button" class="nav-cta hidden md:inline-flex" id="btn-publicar-nav">🏡 Publicar mi hogar</button>
+        <button type="button" id="btn-logout" class="nav-link">Salir</button>
+        <button id="btn-perfil-usuario" class="profile-btn" aria-label="Perfil de usuario">
+          <img src="/static/img/usuario1.jpg" alt="Perfil de usuario" class="nav-avatar" id="header-profile-img">
+        </button>
       </div>
+    </div>
+  </nav>
 
-      <button id="btn-perfil-usuario" class="profile-btn" aria-label="Perfil de usuario">
-        <img
-          src="/static/img/usuario1.jpg"
-          alt="Perfil de usuario"
-          class="profile-img"
-          id="header-profile-img"
-        >
-      </button>
-    </header>
+  <main class="mx-auto w-full max-w-[1200px] px-4 pb-32 pt-6 md:px-6 md:pt-10">
 
-    <section style="margin-bottom:24px;">
-      <div style="position:relative;">
+    <!-- ── Hero + buscador ─────────────────────────────── -->
+    <section class="hero-card mb-10 rounded-2xl p-6 shadow-md md:p-10">
+      <h1 class="m-0 text-2xl font-extrabold leading-tight text-brand-brown md:text-4xl">
+        Cuidado amoroso para tu mascota
+      </h1>
+      <p class="mb-5 mt-2 text-sm text-stone-500 md:text-base">
+        Encuentra anfitriones de confianza cerca de ti.
+      </p>
+      <div class="relative max-w-2xl">
         <input
           id="input-busqueda-ciudad"
           class="input-pill"
@@ -36,42 +48,20 @@
           placeholder="¿Dónde quieres dejar a tu mascota?"
           autocomplete="off"
         >
-
         <div
           id="sugerencias-ciudad"
-          style="
-            display:none;
-            position:absolute;
-            top:100%;
-            left:0;
-            right:0;
-            margin-top:6px;
-            background:#fff;
-            border:1px solid #e8d7c5;
-            border-radius:16px;
-            box-shadow:0 8px 24px rgba(0,0,0,0.08);
-            z-index:20;
-            overflow:hidden;
-          "
+          style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:6px;background:#fff;border:1px solid #e8d7c5;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,0.08);z-index:20;overflow:hidden;"
         ></div>
       </div>
-
-  <div style="display:flex;gap:8px;margin-top:12px;">
-  <button class="chip chip-ghost" id="btn-pet">🐶 Mascotas</button>
-
-  <button id="btn-mis-chats" class="btn-chats">
-    💬 Mis chats
-    <span id="badge-no-leidos" class="badge-no-leidos" style="display: none;">0</span>
-  </button>
-</div>
+    </section>
 
     <div class="calendar-overlay" id="pets-modal">
-      <div class="calendar-box">
+      <div class="calendar-box pets-box">
         <div class="calendar-header">
-          <span>Mascotas guardadas</span>
+          <span id="pets-modal-title">Mis mascotas</span>
           <button class="calendar-close" id="pets-close">✕</button>
         </div>
-        <div id="pets-list"></div>
+        <div id="pets-list" class="pets-grid"></div>
       </div>
     </div>
 
@@ -88,7 +78,10 @@
 <div class="calendar-overlay" id="chat-modal">
   <div class="calendar-box" style="max-width: 520px; width: 100%;">
     <div class="calendar-header">
-      <span id="chat-titulo">Conversación</span>
+      <span class="flex min-w-0 items-center gap-2">
+      <span id="chat-titulo" class="truncate">Conversación</span>
+      <button type="button" id="chat-ver-perfil" class="ver-perfil-btn">👤 Ver perfil</button>
+    </span>
       <button class="calendar-close" id="chat-close">✕</button>
     </div>
 
@@ -117,47 +110,49 @@
   </div>
 </div>
 
-    <section style="margin-bottom:24px;">
-      <h2 style="font-size:1.2rem;margin-bottom:12px;">CEO'S (Anfitriones)</h2>
-      <div style="display:flex;gap:14px;overflow-x:auto;padding-bottom:8px;">
-        <article class="card" style="min-width:220px;background:#ffe8c1;">
+
+    <!-- ── CEO's ───────────────────────────────────────── -->
+    <section class="mb-10">
+      <h2 class="section-title">CEO'S (Anfitriones)</h2>
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <article class="card rounded-2xl bg-[#ffe8c1] shadow-md">
           <img src="/static/img/FOTO_NATA.jpg" alt="Foto de Natalia" class="card-img">
-          <div style="padding:12px 14px 14px;">
-            <h3 style="font-size:1rem;margin-bottom:4px;">Natalia Muñoz</h3>
-            <p style="margin:0 6px;font-size:0.9rem;color:var(--muted);">
-              Psicóloga Magíster (ICESI)
-            </p>
+          <div class="p-4">
+            <h3 class="m-0 mb-1 text-base font-bold">Natalia Muñoz</h3>
+            <p class="m-0 text-sm text-stone-500">Psicóloga Magíster (ICESI)</p>
           </div>
         </article>
-
-        <article class="card" style="min-width:220px;background:#ffe8c1;">
+        <article class="card rounded-2xl bg-[#ffe8c1] shadow-md">
           <img src="/static/img/FOTO_PIPE.jpg" alt="Foto de Felipe" class="card-img">
-          <div style="padding:12px 14px 14px;">
-            <h3 style="font-size:1rem;margin-bottom:4px;">Felipe Romero</h3>
-            <p style="margin:0 6px;font-size:0.9rem;color:var(--muted);">
-              Médico Veterinario Zootecnista (Universidad de Caldas)
-            </p>
+          <div class="p-4">
+            <h3 class="m-0 mb-1 text-base font-bold">Felipe Romero</h3>
+            <p class="m-0 text-sm text-stone-500">Médico Veterinario Zootecnista (Universidad de Caldas)</p>
           </div>
         </article>
       </div>
     </section>
 
-    <section style="margin-bottom:24px;">
-      <h2 style="font-size:1.1rem;margin-bottom:12px;">Anfitriones de la comunidad</h2>
-      <div id="host-list" style="display:flex;gap:14px;overflow-x:auto;padding-bottom:8px;"></div>
+    <!-- ── Anfitriones ─────────────────────────────────── -->
+    <section class="mb-10">
+      <h2 class="section-title">Anfitriones de la comunidad</h2>
+      <div id="host-list" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"></div>
+    </section>
+
+    <!-- ── Mascotas de la comunidad ────────────────────── -->
+    <section class="mb-10">
+      <h2 class="section-title">Mascotas de la comunidad</h2>
+      <div id="community-pets" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"></div>
     </section>
 
     <div class="fab-wrap">
-      <button class="fab" id="btn-add-pet" aria-label="Agregar">
-        +
-      </button>
+      <button class="fab" id="btn-add-pet" aria-label="Agregar mascota" title="Registrar mascota">+</button>
     </div>
 
   </main>
 
   <button
-    class="btn-primary"
-    style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);max-width:380px;"
+    class="btn-primary md:hidden"
+    style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);width:calc(100% - 48px);max-width:380px;z-index:10;"
     id="btn-publicar"
   >
     Publicar mi hogar
@@ -215,7 +210,20 @@
       return "/static/img/registro-mascotas.png";
     }
 
+    // minúsculas y sin tildes: "Bogotá" -> "bogota" (el backend aplica la misma normalización)
+    function normalizarTexto(texto) {
+      return (texto || "")
+        .toString()
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/\p{Diacritic}/gu, "");
+    }
+
+    let ultimaBusquedaId = 0;   // evita que una respuesta lenta pise a una más reciente
+
     async function cargarAnfitriones(ciudad = "") {
+      const busquedaId = ++ultimaBusquedaId;
       const hostList = document.getElementById("host-list");
       if (!hostList) return;
 
@@ -224,12 +232,15 @@
       try {
         let url = `${API_BASE}/anfitriones`;
 
-        if (ciudad && ciudad.trim() !== "") {
-          url += `?ciudad=${encodeURIComponent(ciudad.trim())}`;
+        const termino = normalizarTexto(ciudad);
+        if (termino) {
+          url += `?ciudad=${encodeURIComponent(termino)}`;
         }
 
         const response = await fetch(url);
         const anfitriones = await response.json();
+
+        if (busquedaId !== ultimaBusquedaId) return;
 
         if (!response.ok) {
           hostList.innerHTML = "<p>No se pudieron cargar los anfitriones.</p>";
@@ -247,33 +258,19 @@
 
         anfitriones.forEach((host) => {
           const article = document.createElement("article");
-          article.className = "card";
-          article.style.minWidth = "220px";
-          article.style.background = "#ffe8c1";
-          article.style.cursor = "pointer";
+          article.className = "card host-card flex flex-col rounded-2xl bg-[#ffe8c1] shadow-md cursor-pointer";
 
           const foto = obtenerFotoAnfitrion(host);
 
           article.innerHTML = `
             <img src="${foto}" alt="Foto de ${host.nombre}" class="card-img">
-            <div style="padding:12px 14px 14px;">
-              <h3 style="font-size:1rem;margin-bottom:4px;">${host.nombre}</h3>
-
-              <p style="margin:0 0 6px;font-size:0.9rem;color:var(--muted);">
-                ${host.direccion || "Dirección no especificada"}
-              </p>
-
-              <button
-                class="chip chip-ghost btn-ver-ubicacion"
-                style="margin-bottom:8px;font-size:0.82rem;"
-                type="button"
-              >
-                📍 Ver ubicación
-              </button>
-
-              <p style="margin:0;font-size:0.9rem;color:var(--muted);">
-                ${host.descripcion || "Sin descripción"}
-              </p>
+            <div class="flex flex-1 flex-col gap-2 p-4">
+              <h3 class="m-0 text-base font-bold">${host.nombre}</h3>
+              <p class="m-0 text-sm text-stone-500">📍 ${host.direccion || "Dirección no especificada"}</p>
+              <p class="m-0 line-clamp-3 text-sm text-stone-600">${host.descripcion || "Sin descripción"}</p>
+              <div class="mt-auto pt-2">
+                <button class="chip chip-inline btn-ver-ubicacion" type="button">🗺️ Ver ubicación</button>
+              </div>
             </div>
           `;
 
@@ -307,6 +304,52 @@
       }
     }
 
+    async function cargarMascotasComunidad() {
+      const cont = document.getElementById("community-pets");
+      if (!cont) return;
+      cont.innerHTML = "<p>Cargando mascotas...</p>";
+
+      try {
+        const response = await fetch(`${API_BASE}/mascotas/comunidad`);
+        const mascotas = await response.json();
+
+        if (!response.ok) {
+          cont.innerHTML = "<p>No se pudieron cargar las mascotas.</p>";
+          return;
+        }
+        if (!mascotas.length) {
+          cont.innerHTML = "<p>Aún no hay mascotas registradas.</p>";
+          return;
+        }
+
+        cont.innerHTML = "";
+        mascotas.forEach((pet) => {
+          const card = document.createElement("article");
+          card.className = "card flex flex-col rounded-2xl bg-white shadow-md cursor-pointer";
+          card.innerHTML = `
+            <img src="${obtenerFotoMascota(pet)}" alt="Foto de ${pet.nombre}" class="card-img">
+            <div class="flex flex-col gap-1 p-4">
+              <div class="flex items-center justify-between gap-2">
+                <h3 class="m-0 text-base font-bold">${pet.nombre}</h3>
+                ${pet.tipo_mascota ? `<span class="pet-tag">${pet.tipo_mascota}</span>` : ""}
+              </div>
+              <p class="m-0 text-sm text-stone-500"><strong>Raza:</strong> ${pet.raza || "No registrada"}</p>
+              <p class="m-0 text-sm text-stone-500"><strong>Edad:</strong> ${pet.edad || "No registrada"}</p>
+              <p class="m-0 mt-1 text-sm text-stone-600">👤 Responsable: <strong>${pet.dueno_nombre}</strong></p>
+            </div>
+          `;
+          card.addEventListener("click", () => {
+            localStorage.setItem("mascotaSeleccionada", JSON.stringify(pet));
+            window.location.href = "/detalle-mascota";
+          });
+          cont.appendChild(card);
+        });
+      } catch (error) {
+        console.error("Error cargando mascotas de la comunidad:", error);
+        cont.innerHTML = "<p>Error de conexión al cargar mascotas.</p>";
+      }
+    }
+
     async function obtenerMisMascotas() {
       const token = getAccessToken();
 
@@ -315,7 +358,12 @@
       }
 
       try {
-        const response = await fetch(`${API_BASE}/mascotas/mis-mascotas`, {
+        // El administrador ve todas las mascotas para poder gestionarlas.
+        let esAdmin = false;
+        try { esAdmin = JSON.parse(localStorage.getItem("usuarioActual"))?.rol === "admin"; } catch (e) {}
+        const endpoint = esAdmin ? "/mascotas" : "/mascotas/mis-mascotas";
+
+        const response = await fetch(`${API_BASE}${endpoint}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -810,9 +858,12 @@ async function enviarMensajeChat(e) {
         }
 
         timeoutSugerencias = setTimeout(async () => {
+          // Filtrado dinámico mientras se escribe + sugerencias de ciudad/barrio
+          cargarAnfitriones(valor);
           const sugerencias = await obtenerSugerenciasCiudad(valor);
-          mostrarSugerenciasCiudad(sugerencias);
-        }, 250);
+          const q = normalizarTexto(valor);
+          mostrarSugerenciasCiudad(sugerencias.filter((c) => normalizarTexto(c).includes(q)));
+        }, 300);
       });
 
       document.addEventListener("click", (e) => {
@@ -835,8 +886,17 @@ async function enviarMensajeChat(e) {
     return;
   }
 
+  // Etiquetas según el rol: el admin gestiona todas las mascotas, el resto ve las suyas
+  if (usuario.rol === "admin") {
+    const lbl = document.getElementById("btn-pet-label");
+    const tit = document.getElementById("pets-modal-title");
+    if (lbl) lbl.textContent = "Mascotas (admin)";
+    if (tit) tit.textContent = "Todas las mascotas";
+  }
+
   cargarFotoHeaderUsuario();
   cargarAnfitriones();
+  cargarMascotasComunidad();
   inicializarBusquedaCiudad();
   cargarContadorNoLeidos();
 })();
@@ -860,12 +920,17 @@ async function enviarMensajeChat(e) {
       });
     }
 
-    const btnPublicar = document.getElementById("btn-publicar");
-    if (btnPublicar) {
-      btnPublicar.addEventListener("click", () => {
+    ["btn-publicar", "btn-publicar-nav"].forEach((id) => {
+      document.getElementById(id)?.addEventListener("click", () => {
         window.location.href = "/perfil-anfitrion";
       });
-    }
+    });
+
+    document.getElementById("chat-ver-perfil")?.addEventListener("click", () => {
+      if (chatUsuarioActualAbierto) {
+        window.location.href = `/perfil-publico?id=${encodeURIComponent(chatUsuarioActualAbierto)}`;
+      }
+    });
 
     const btnPet = document.getElementById("btn-pet");
     if (btnPet) {

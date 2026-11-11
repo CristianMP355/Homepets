@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>HuellaHome - Perfil de usuario</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="/static/estilos.css">
+  {% include "base_head.html" %}
 
   <style>
     .user-avatar {
@@ -65,7 +64,8 @@
   </style>
 </head>
 
-<body class="auth-body">
+<body class="auth-body app-body">
+  {% include "base_navbar.html" %}
   <main class="auth-page">
 
     <section class="auth-card">

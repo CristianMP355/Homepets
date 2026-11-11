@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>HuellaHome - Chat</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="/static/estilos.css">
+  {% include "base_head.html" %}
   <style>
     .chat-page {
       display: flex;
@@ -100,14 +99,15 @@
     }
   </style>
 </head>
-<body class="auth-body">
+<body class="auth-body app-body">
+  {% include "base_navbar.html" %}
   <main class="auth-page">
     <section class="auth-card chat-page">
 
       <header class="app-header" style="margin-bottom:16px;">
         <button class="back-btn" onclick="window.history.back()">←</button>
         <h1 class="chat-header-title" id="chat-title">Chat</h1>
-        <span style="width:32px;"></span>
+        <button type="button" id="chat-ver-perfil" class="ver-perfil-btn">👤 Ver perfil</button>
       </header>
 
       <div id="chat-box" class="chat-box">
@@ -310,6 +310,11 @@
       await cargarNombreChat(otroUsuarioId);
       await cargarConversacion();
     })();
+
+    document.getElementById("chat-ver-perfil")?.addEventListener("click", () => {
+      const id = obtenerOtroUsuarioId();
+      if (id) window.location.href = `/perfil-publico?id=${encodeURIComponent(id)}`;
+    });
 
     const chatForm = document.getElementById("chat-form");
     if (chatForm) {

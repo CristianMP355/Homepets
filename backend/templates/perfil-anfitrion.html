@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <title>HuellaHome - Perfil anfitrión</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="/static/estilos.css">
+  {% include "base_head.html" %}
 </head>
-<body>
-  <main class="page">
+<body class="app-body">
+  {% include "base_navbar.html" %}
+  <main class="page page-narrow page-with-fixed-btn">
 
     <header class="app-header">
       <button class="back-btn" onclick="window.location.href='/'">←</button>
@@ -15,54 +15,101 @@
       <span></span>
     </header>
 
-    <section style="text-align:center;margin-bottom:24px;">
-      <div class="host-avatar">
+    <section class="form-avatar">
+      <div class="host-avatar host-avatar-lg">
         <img src="/static/img/anfitrion.jpg" alt="Foto anfitrión" id="host-photo">
       </div>
-      <button class="edit-avatar-btn" id="btn-change-photo" type="button">Cambiar foto</button>
+      <button class="chip chip-inline" id="btn-change-photo" type="button">📷 Cambiar foto</button>
       <input type="file" id="host-photo-input" accept="image/*" style="display:none;">
-      <p id="photo-help-text" style="font-size:0.9rem;color:#8a5a2b;margin-top:8px;">
+      <p id="photo-help-text" class="form-help">
         La foto del anfitrión es obligatoria al crear el perfil.
       </p>
     </section>
 
-    <section>
-      <label class="field-label">Dirección / Barrio / Ciudad</label>
-      <input
-        class="input-pill host-direccion"
-        type="text"
-        placeholder="Ej. Calle 25c # 00-00, Olímpico, Palmira"
-      >
+    <section class="form-card">
+      <div class="form-group">
+        <label class="field-label" for="host-direccion">Dirección / Barrio / Ciudad</label>
+        <input
+          id="host-direccion"
+          class="form-input host-direccion"
+          type="text"
+          placeholder="Ej. Calle 25c # 00-00, Olímpico, Palmira"
+        >
+      </div>
 
-      <label class="field-label">Sobre mí, descripción tuya para los dueños...</label>
-      <textarea
-        class="notes-area host-descripcion"
-        placeholder="Cuenta cómo cuidas a las mascotas."
-      ></textarea>
+      <div class="form-group">
+        <label class="field-label" for="host-descripcion">Sobre mí</label>
+        <textarea
+          id="host-descripcion"
+          class="form-input form-textarea host-descripcion"
+          rows="5"
+          placeholder="Cuenta a los dueños cómo cuidas a las mascotas, tu experiencia y tu espacio."
+        ></textarea>
+      </div>
 
-      <label class="field-label">Fechas no disponibles</label>
-      <input
-        id="input-fechas-no-disponibles"
-        class="input-pill"
-        type="text"
-        placeholder="2026-07-10,2026-07-11,2026-07-18"
-      >
-      <p style="margin:6px 4px 14px;font-size:0.82rem;color:var(--muted);">
-        Escribe las fechas separadas por comas en formato AAAA-MM-DD.
-      </p>
+      <div class="form-group">
+        <label class="field-label">Fechas no disponibles</label>
+        <div class="fechas-resumen">
+          <div id="fechas-chips" class="fechas-chips">
+            <span class="form-help">No has bloqueado ninguna fecha.</span>
+          </div>
+          <button type="button" class="chip chip-inline" id="btn-abrir-calendario-bloqueo">
+            📅 Elegir fechas en el calendario
+          </button>
+        </div>
+      </div>
 
-      <label class="field-label">Fotos del espacio (máximo 5)</label>
-      <input type="file" id="space-photos-input" accept="image/*" multiple>
-      <div id="space-photos-preview" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;"></div>
+      <div class="form-group">
+        <label class="field-label" for="space-photos-input">
+          Fotos de tu hogar / espacio <span class="required-mark">* obligatorio</span>
+        </label>
+        <p class="form-help">Sube entre 1 y 5 fotos para que los dueños conozcan dónde estará su mascota.</p>
+        <div id="space-photos-existing" class="photos-preview"></div>
+        <label class="file-drop" for="space-photos-input">
+          <span>🖼️ Seleccionar fotos</span>
+          <small>JPG, PNG o WEBP</small>
+        </label>
+        <input type="file" id="space-photos-input" accept="image/*" multiple style="display:none;">
+        <div id="space-photos-preview" class="photos-preview"></div>
+        <p id="space-photos-warning" class="form-warning" style="display:none;"></p>
+      </div>
     </section>
 
   </main>
+
+  <!-- ── MODAL CALENDARIO: fechas no disponibles ─────────── -->
+  <div class="calendar-overlay" id="bloqueo-modal">
+    <div class="calendar-box">
+      <div class="calendar-header">
+        <button class="calendar-nav" id="bloqueo-prev" type="button">‹</button>
+        <span id="bloqueo-title">Disponibilidad</span>
+        <button class="calendar-nav" id="bloqueo-next" type="button">›</button>
+      </div>
+
+      <p class="form-help" style="text-align:center;margin:0 0 10px;">
+        Toca los días para marcarlos (o desmarcarlos) como no disponibles.
+      </p>
+
+      <div class="calendar-grid" id="bloqueo-grid"></div>
+
+      <p class="calendar-legend">
+        <span><span class="legend-dot verde"></span> Disponible</span>
+        <span><span class="legend-dot naranja"></span> Por confirmar</span>
+        <span><span class="legend-dot rojo"></span> Ocupado / bloqueado</span>
+      </p>
+
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button type="button" class="chip" id="bloqueo-limpiar" style="flex:1;">Limpiar</button>
+        <button type="button" class="btn-primary" id="bloqueo-listo" style="flex:1;">Listo</button>
+      </div>
+    </div>
+  </div>
 
   <button
     type="button"
     class="btn-primary"
     id="btn-save-host"
-    style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);max-width:380px;">
+    style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);width:calc(100% - 48px);max-width:380px;z-index:10;">
     Guardar perfil
   </button>
 
@@ -75,11 +122,204 @@
     const spacePhotosInput = document.getElementById("space-photos-input");
     const spacePhotosPreview = document.getElementById("space-photos-preview");
     const photoHelpText = document.getElementById("photo-help-text");
-    const inputFechasNoDisponibles = document.getElementById("input-fechas-no-disponibles");
-
     let selectedPhotoFile = null;
     let selectedSpacePhotos = [];
     let anfitrionExistente = null;
+    let fotosEspacioExistentes = [];   // fotos ya guardadas en el servidor
+
+    function mostrarAvisoFotos(msg) {
+      const el = document.getElementById("space-photos-warning");
+      if (!el) return;
+      el.textContent = msg ? `⚠️ ${msg}` : "";
+      el.style.display = msg ? "block" : "none";
+      if (msg) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    async function cargarFotosEspacioExistentes() {
+      const cont = document.getElementById("space-photos-existing");
+      if (!anfitrionExistente || !anfitrionExistente.id) return;
+      try {
+        const resp = await fetch(`${API_BASE}/anfitriones/${anfitrionExistente.id}/detalle`);
+        if (!resp.ok) return;
+        const data = await resp.json();
+        fotosEspacioExistentes = data.fotos_espacio || [];
+        if (cont) {
+          cont.innerHTML = fotosEspacioExistentes
+            .map((f) => `<img src="${f.ruta_foto}" alt="Foto del espacio guardada" title="Ya guardada">`)
+            .join("");
+        }
+      } catch (e) {
+        console.error("No se pudieron cargar las fotos del espacio:", e);
+      }
+    }
+
+    // Devuelve un mensaje de error si las fotos del espacio no cumplen el requisito
+    function validarFotosEspacio() {
+      const total = fotosEspacioExistentes.length + selectedSpacePhotos.length;
+      if (total === 0) return "Debes subir al menos 1 foto de tu hogar o espacio antes de guardar el perfil.";
+      if (total > 5) return `Máximo 5 fotos del espacio en total (ya tienes ${fotosEspacioExistentes.length} guardadas).`;
+      return "";
+    }
+
+    // ── Fechas no disponibles (calendario modal) ─────────────
+    const fechasBloqueadas = new Set();      // elegidas por el anfitrión
+    let fechasPendientesHost = new Set();    // solicitudes por confirmar (naranja, solo lectura)
+    let fechasConfirmadasHost = new Set();   // reservas confirmadas (rojo, solo lectura)
+    let mesBloqueo = new Date();
+    mesBloqueo.setDate(1);
+
+    const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+                   "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+    function fechaISO(y, m, d) {
+      return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    }
+
+    function esFechaValida(str) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) return false;
+      const [y, m, d] = str.split("-").map(Number);
+      const dt = new Date(y, m - 1, d);
+      return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
+    }
+
+    function parsearFechas(valor) {
+      if (!valor) return [];
+      if (Array.isArray(valor)) return valor.filter(esFechaValida);
+      let lista = [];
+      try {
+        const parsed = JSON.parse(valor);
+        if (Array.isArray(parsed)) lista = parsed.map(String);
+      } catch (e) {
+        lista = String(valor).replace(/,/g, " ").split(/\s+/);
+      }
+      return lista.map(s => s.trim()).filter(esFechaValida);
+    }
+
+    function formatearFechaCorta(str) {
+      const [y, m, d] = str.split("-").map(Number);
+      return `${d} ${MESES[m - 1].slice(0, 3).toLowerCase()} ${y}`;
+    }
+
+    function renderizarChipsFechas() {
+      const cont = document.getElementById("fechas-chips");
+      if (!cont) return;
+      const ordenadas = [...fechasBloqueadas].sort();
+      if (!ordenadas.length) {
+        cont.innerHTML = `<span class="form-help">No has bloqueado ninguna fecha.</span>`;
+        return;
+      }
+      cont.innerHTML = "";
+      ordenadas.forEach((f) => {
+        const chip = document.createElement("span");
+        chip.className = "fecha-chip";
+        chip.innerHTML = `${formatearFechaCorta(f)} <button type="button" aria-label="Quitar fecha">✕</button>`;
+        chip.querySelector("button").addEventListener("click", () => {
+          fechasBloqueadas.delete(f);
+          renderizarChipsFechas();
+        });
+        cont.appendChild(chip);
+      });
+    }
+
+    function renderizarCalendarioBloqueo() {
+      const grid = document.getElementById("bloqueo-grid");
+      const title = document.getElementById("bloqueo-title");
+      if (!grid || !title) return;
+
+      const y = mesBloqueo.getFullYear();
+      const m = mesBloqueo.getMonth();
+      title.textContent = `${MESES[m]} ${y}`;
+      grid.innerHTML = "";
+
+      ["L","M","M","J","V","S","D"].forEach((d) => {
+        const wd = document.createElement("div");
+        wd.className = "calendar-weekday";
+        wd.textContent = d;
+        grid.appendChild(wd);
+      });
+
+      let offset = new Date(y, m, 1).getDay();
+      offset = offset === 0 ? 6 : offset - 1;
+      for (let i = 0; i < offset; i++) {
+        const vacio = document.createElement("div");
+        vacio.className = "calendar-day";
+        vacio.style.visibility = "hidden";
+        grid.appendChild(vacio);
+      }
+
+      const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+      const total = new Date(y, m + 1, 0).getDate();
+
+      for (let d = 1; d <= total; d++) {
+        const f = fechaISO(y, m, d);
+        const celda = document.createElement("div");
+        celda.className = "calendar-day";
+        celda.textContent = d;
+
+        if (new Date(y, m, d) < hoy) {
+          celda.classList.add("pasado");
+        } else if (fechasConfirmadasHost.has(f)) {
+          celda.classList.add("ocupada");
+          celda.title = "Reserva confirmada";
+        } else if (fechasPendientesHost.has(f)) {
+          celda.classList.add("solicitada");
+          celda.title = "Solicitud por confirmar";
+        } else {
+          celda.classList.add(fechasBloqueadas.has(f) ? "bloqueada" : "disponible");
+          celda.addEventListener("click", () => {
+            if (fechasBloqueadas.has(f)) fechasBloqueadas.delete(f);
+            else fechasBloqueadas.add(f);
+            renderizarCalendarioBloqueo();
+            renderizarChipsFechas();
+          });
+        }
+        grid.appendChild(celda);
+      }
+    }
+
+    async function abrirCalendarioBloqueo() {
+      if (anfitrionExistente && anfitrionExistente.id) {
+        try {
+          const resp = await fetch(`${API_BASE}/anfitriones/${anfitrionExistente.id}/fechas-ocupadas`);
+          if (resp.ok) {
+            const data = await resp.json();
+            fechasPendientesHost = new Set(data.fechas_solicitadas || []);
+            fechasConfirmadasHost = new Set(data.fechas_confirmadas || []);
+          }
+        } catch (e) {
+          console.error("No se pudieron cargar las reservas del calendario:", e);
+        }
+      }
+      renderizarCalendarioBloqueo();
+      document.getElementById("bloqueo-modal")?.classList.add("active");
+    }
+
+    function cerrarCalendarioBloqueo() {
+      document.getElementById("bloqueo-modal")?.classList.remove("active");
+    }
+
+    document.getElementById("btn-abrir-calendario-bloqueo")?.addEventListener("click", abrirCalendarioBloqueo);
+    document.getElementById("bloqueo-listo")?.addEventListener("click", cerrarCalendarioBloqueo);
+    document.getElementById("bloqueo-limpiar")?.addEventListener("click", () => {
+      fechasBloqueadas.clear();
+      renderizarCalendarioBloqueo();
+      renderizarChipsFechas();
+    });
+    document.getElementById("bloqueo-prev")?.addEventListener("click", () => {
+      mesBloqueo.setMonth(mesBloqueo.getMonth() - 1);
+      renderizarCalendarioBloqueo();
+    });
+    document.getElementById("bloqueo-next")?.addEventListener("click", () => {
+      mesBloqueo.setMonth(mesBloqueo.getMonth() + 1);
+      renderizarCalendarioBloqueo();
+    });
+    document.getElementById("bloqueo-modal")?.addEventListener("click", (e) => {
+      if (e.target.id === "bloqueo-modal") cerrarCalendarioBloqueo();
+    });
+
+    function obtenerFechasNoDisponiblesTexto() {
+      return [...fechasBloqueadas].sort().join(",");
+    }
 
     function getHostValue(selector) {
       const el = document.querySelector(selector);
@@ -110,9 +350,9 @@
 
       if (direccionInput) direccionInput.value = anfitrion.direccion || "";
       if (descripcionInput) descripcionInput.value = anfitrion.descripcion || "";
-      if (inputFechasNoDisponibles) {
-        inputFechasNoDisponibles.value = anfitrion.fechas_no_disponibles || "";
-      }
+      fechasBloqueadas.clear();
+      parsearFechas(anfitrion.fechas_no_disponibles).forEach((f) => fechasBloqueadas.add(f));
+      renderizarChipsFechas();
 
       if (anfitrion.foto && anfitrion.foto.trim() !== "") {
         hostPhoto.src = anfitrion.foto;
@@ -132,6 +372,7 @@
       if (anfitrionLocal && Number(anfitrionLocal.usuario_id) === Number(usuario.id)) {
         anfitrionExistente = anfitrionLocal;
         rellenarFormulario(anfitrionExistente);
+        await cargarFotosEspacioExistentes();
         return;
       }
 
@@ -147,11 +388,12 @@
 
           const usuarioActual = getUsuarioActual();
           if (usuarioActual) {
-            usuarioActual.rol = "anfitrion";
+            if (usuarioActual.rol !== "admin") usuarioActual.rol = "anfitrion";
             localStorage.setItem("usuarioActual", JSON.stringify(usuarioActual));
           }
 
           rellenarFormulario(data);
+          await cargarFotosEspacioExistentes();
         }
       } catch (error) {
         console.error("No se pudo consultar el perfil de anfitrión existente:", error);
@@ -189,15 +431,16 @@
         const files = Array.from(event.target.files || []);
 
         if (files.length > 5) {
-          alert("Solo puedes seleccionar máximo 5 fotos del espacio.");
+          mostrarAvisoFotos("Solo puedes seleccionar máximo 5 fotos del espacio.");
           spacePhotosInput.value = "";
           selectedSpacePhotos = [];
           spacePhotosPreview.innerHTML = "";
           return;
         }
 
-        selectedSpacePhotos = files;
+        selectedSpacePhotos = files.filter((f) => f.type.startsWith("image/"));
         spacePhotosPreview.innerHTML = "";
+        mostrarAvisoFotos(validarFotosEspacio());
 
         files.forEach((file) => {
           if (!file.type.startsWith("image/")) return;
@@ -206,10 +449,7 @@
           reader.onload = function(e) {
             const img = document.createElement("img");
             img.src = e.target.result;
-            img.style.width = "90px";
-            img.style.height = "90px";
-            img.style.objectFit = "cover";
-            img.style.borderRadius = "12px";
+            img.alt = "Vista previa del espacio";
             spacePhotosPreview.appendChild(img);
           };
           reader.readAsDataURL(file);
@@ -236,7 +476,7 @@
 
         const descripcion = getHostValue(".host-descripcion");
         const direccion = getHostValue(".host-direccion");
-        const fechasNoDisponibles = inputFechasNoDisponibles ? inputFechasNoDisponibles.value.trim() : "";
+        const fechasNoDisponibles = obtenerFechasNoDisponiblesTexto();
 
         if (!direccion) {
           alert("Debes escribir una dirección");
@@ -247,6 +487,14 @@
           alert("Debes escribir una descripción");
           return;
         }
+
+        const errorFotos = validarFotosEspacio();
+        if (errorFotos) {
+          mostrarAvisoFotos(errorFotos);
+          alert(errorFotos);
+          return;
+        }
+        mostrarAvisoFotos("");
 
         const headers = {
           "Authorization": `Bearer ${token}`
@@ -262,6 +510,10 @@
             if (selectedPhotoFile) {
               formData.append("foto", selectedPhotoFile);
             }
+
+            selectedSpacePhotos.forEach((file) => {
+              formData.append("fotos_espacio", file);
+            });
 
             const response = await fetch(`${API_BASE}/anfitriones/${anfitrionExistente.id}`, {
               method: "PATCH",
@@ -285,7 +537,7 @@
 
               const usuarioActual = getUsuarioActual();
               if (usuarioActual) {
-                usuarioActual.rol = "anfitrion";
+                if (usuarioActual.rol !== "admin") usuarioActual.rol = "anfitrion";
                 localStorage.setItem("usuarioActual", JSON.stringify(usuarioActual));
               }
 
@@ -334,7 +586,7 @@
 
             const usuarioActual = getUsuarioActual();
             if (usuarioActual) {
-              usuarioActual.rol = "anfitrion";
+              if (usuarioActual.rol !== "admin") usuarioActual.rol = "anfitrion";
               localStorage.setItem("usuarioActual", JSON.stringify(usuarioActual));
             }
 

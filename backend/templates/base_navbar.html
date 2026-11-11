@@ -1,0 +1,30 @@
+{# Barra superior para páginas internas: {% include "base_navbar.html" %} #}
+<nav class="topnav">
+  <div class="mx-auto flex max-w-[1200px] items-center justify-between gap-4 px-4 py-3 md:px-6">
+    <a href="/" class="flex items-center gap-2 no-underline">
+      <span class="logo-icon">🐾</span>
+      <span class="app-title">HomePets</span>
+    </a>
+    <div class="flex items-center gap-2 md:gap-3">
+      <a href="/" class="nav-link hidden sm:inline-flex">Inicio</a>
+      <a href="/perfil-usuario" class="nav-link hidden sm:inline-flex">Mi perfil</a>
+      <button type="button" class="nav-link" id="nav-logout">Salir</button>
+      <a href="/perfil-usuario" aria-label="Mi perfil">
+        <img src="/static/img/usuario1.jpg" alt="Mi perfil" class="nav-avatar" id="nav-avatar">
+      </a>
+    </div>
+  </div>
+</nav>
+<script>
+  (function () {
+    let u = null;
+    try { u = JSON.parse(localStorage.getItem("usuarioActual")); } catch (e) {}
+    const img = document.getElementById("nav-avatar");
+    if (img && u && u.foto_user) img.src = u.foto_user;
+    document.getElementById("nav-logout")?.addEventListener("click", () => {
+      ["usuarioActual", "access_token", "anfitrionActual", "anfitrionSeleccionado",
+       "anfitrionEditar", "mascotaSeleccionada"].forEach((k) => localStorage.removeItem(k));
+      window.location.href = "/auth";
+    });
+  })();
+</script>

@@ -1,0 +1,24 @@
+# Entorno y secretos
+.venv/
+.env
+backend/.env
+
+# Datos privados (no publicar)
+docs_privados/
+
+# Python
+__pycache__/
+*.pyc
+
+# Archivos subidos por usuarios
+static/uploads/
+
+# Variantes de archivos de entorno
+.env.*
+!.env.example
+*.db
+
+# Archivos locales de trabajo (no publicar)
+.claude/
+prompt_*.txt
+2prompt_*.txt

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean, Date
 from sqlalchemy.orm import relationship
 from backend.database.database import Base
 from datetime import datetime
@@ -46,6 +46,13 @@ class Usuario(Base):
         cascade="all, delete-orphan"
     )
 
+    solicitudes_enviadas = relationship(
+        "SolicitudReserva",
+        foreign_keys="SolicitudReserva.solicitante_id",
+        back_populates="solicitante",
+        cascade="all, delete-orphan"
+    )
+
     @staticmethod
     def hash_password(password: str) -> str:
         return hashlib.sha256(password.encode()).hexdigest()
@@ -72,6 +79,12 @@ class Anfitrion(Base):
 
     fotos_espacio = relationship(
         "FotoEspacio",
+        back_populates="anfitrion",
+        cascade="all, delete-orphan"
+    )
+
+    solicitudes = relationship(
+        "SolicitudReserva",
         back_populates="anfitrion",
         cascade="all, delete-orphan"
     )
@@ -147,3 +160,39 @@ class Mascota(Base):
     )
 
     usuario = relationship("Usuario", back_populates="mascotas")
+
+
+class SolicitudReserva(Base):
+    __tablename__ = "solicitudes_reserva"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    anfitrion_id = Column(
+        Integer,
+        ForeignKey("anfitriones.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    solicitante_id = Column(
+        Integer,
+        ForeignKey("usuarios.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    fecha_inicio = Column(Date, nullable=False)
+    fecha_fin = Column(Date, nullable=False)
+
+    estado = Column(String, nullable=False, default="pendiente")
+
+    fecha_solicitud = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc)
+    )
+
+    anfitrion = relationship("Anfitrion", back_populates="solicitudes")
+    solicitante = relationship(
+        "Usuario",
+        foreign_keys=[solicitante_id],
+        back_populates="solicitudes_enviadas"
+    )

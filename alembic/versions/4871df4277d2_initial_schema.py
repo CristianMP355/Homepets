@@ -44,10 +44,8 @@ def upgrade() -> None:
     sa.UniqueConstraint('usuario_id')
     )
     op.create_index(op.f('ix_anfitriones_id'), 'anfitriones', ['id'], unique=False)
-    op.drop_index(op.f('ix_users_email'), table_name='users')
-    op.drop_index(op.f('ix_users_id'), table_name='users')
-    op.drop_index(op.f('ix_users_nombre'), table_name='users')
-    op.drop_table('users')
+    # Tabla legacy 'users': solo existe en BDs antiguas; en una BD nueva no hay nada que borrar.
+    op.execute("DROP TABLE IF EXISTS users CASCADE")
     # ### end Alembic commands ###
 
 

@@ -19,6 +19,25 @@ from alembic import context
 # access to the values within the .ini file in use.
 config = context.config
 
+# Usar DATABASE_URL del .env (o del entorno en Render) en lugar de la URL fija de alembic.ini.
+# Alembic corre de forma síncrona, así que se cambia el driver asyncpg -> psycopg2.
+from dotenv import load_dotenv
+load_dotenv(BASE_DIR / ".env")
+_db_url = os.getenv("DATABASE_URL")
+if _db_url:
+    _db_url = _db_url.replace("+asyncpg", "+psycopg2")
+    if _db_url.startswith("postgres://"):
+        _db_url = _db_url.replace("postgres://", "postgresql+psycopg2://", 1)
+    elif _db_url.startswith("postgresql://"):
+        _db_url = _db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+    # Supabase / producción: exigir SSL cuando la base no es local
+    from urllib.parse import urlsplit
+    _partes = urlsplit(_db_url)
+    if (_partes.hostname or "").lower() not in ("localhost", "127.0.0.1", "::1", "") \
+            and "sslmode=" not in _partes.query:
+        _db_url += ("&" if _partes.query else "?") + "sslmode=require"
+    config.set_main_option("sqlalchemy.url", _db_url.replace("%", "%%"))
+
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:

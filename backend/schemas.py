@@ -1,5 +1,5 @@
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, date
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -146,6 +146,28 @@ class MascotaRead(BaseModel):
         from_attributes = True
 
 
+class MascotaComunidadRead(BaseModel):
+    """Tarjeta pública de mascota: sin datos de contacto del dueño."""
+    id: int
+    tipo_mascota: Optional[str] = None
+    nombre: str
+    raza: Optional[str] = None
+    edad: Optional[str] = None
+    foto: Optional[str] = None
+    usuario_id: int
+    dueno_nombre: str
+
+
+class PerfilPublicoRead(BaseModel):
+    id: int
+    nombre: str
+    email: EmailStr
+    telefono: Optional[str] = None
+    foto_user: Optional[str] = None
+    anfitrion_id: Optional[int] = None
+    mascotas: list[MascotaRead] = []
+
+
 # =========================
 # MENSAJES / CHAT
 # =========================
@@ -210,3 +232,42 @@ class ChatResumenOut(BaseModel):
 
 class NoLeidosOut(BaseModel):
     total_no_leidos: int
+
+
+# =========================
+# SOLICITUDES DE RESERVA
+# =========================
+
+class SolicitudCreate(BaseModel):
+    anfitrion_id: int
+    fecha_inicio: date
+    fecha_fin: date
+
+
+class SolicitudRead(BaseModel):
+    id: int
+    anfitrion_id: int
+    solicitante_id: int
+    fecha_inicio: date
+    fecha_fin: date
+    estado: str
+    fecha_solicitud: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class FechasOcupadasRead(BaseModel):
+    fechas_no_disponibles: list[str]          # bloqueadas manualmente por el anfitrión (rojo)
+    fechas_solicitadas: list[str]             # solicitudes pendientes: "Por confirmar" (naranja)
+    fechas_confirmadas: list[str] = []        # reservas aceptadas: "Ocupado" (rojo)
+
+
+class SolicitudRecibidaRead(SolicitudRead):
+    solicitante_nombre: str
+    solicitante_email: Optional[str] = None
+    solicitante_telefono: Optional[str] = None
+
+
+class SolicitudEstadoUpdate(BaseModel):
+    estado: str  # "aceptada" | "rechazada"

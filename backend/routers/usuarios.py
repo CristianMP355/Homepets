@@ -4,13 +4,14 @@ from uuid import uuid4
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from pydantic import BaseModel, EmailStr
 from typing import List
 
 from backend.database.database import get_db
 from backend.database.models import Usuario
 from backend.utils.jwt_config import create_access_token, get_current_user
-from backend.schemas import UsuarioRead
+from backend.schemas import UsuarioRead, PerfilPublicoRead, MascotaRead
 
 
 router = APIRouter(prefix="/usuarios", tags=["usuarios"])
@@ -119,6 +120,34 @@ async def login_usuario(credentials: UserLogin, db: AsyncSession = Depends(get_d
             "foto_user": user.foto_user
         }
     }
+
+
+@router.get("/{usuario_id}/perfil-publico", response_model=PerfilPublicoRead)
+async def obtener_perfil_publico(
+    usuario_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Perfil visible para usuarios con sesión (p. ej. desde el chat): contacto + mascotas."""
+    result = await db.execute(
+        select(Usuario)
+        .options(selectinload(Usuario.mascotas), selectinload(Usuario.perfil_anfitrion))
+        .where(Usuario.id == usuario_id)
+    )
+    usuario = result.scalar_one_or_none()
+
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    return PerfilPublicoRead(
+        id=usuario.id,
+        nombre=usuario.nombre,
+        email=usuario.email,
+        telefono=usuario.telefono,
+        foto_user=usuario.foto_user,
+        anfitrion_id=usuario.perfil_anfitrion.id if usuario.perfil_anfitrion else None,
+        mascotas=[MascotaRead.model_validate(m) for m in sorted(usuario.mascotas, key=lambda m: m.id)],
+    )
 
 
 @router.get("/{usuario_id}", response_model=UsuarioRead)

@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>HuellaHome - Perfil de mascota</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="/static/estilos.css">
+  {% include "base_head.html" %}
   <style>
     .pet-avatar {
       width: 180px;
@@ -82,8 +81,9 @@
     }
   </style>
 </head>
-<body>
-  <main class="page">
+<body class="app-body">
+  {% include "base_navbar.html" %}
+  <main class="page page-narrow page-with-fixed-btn">
 
     <header class="app-header">
       <button class="back-btn" onclick="window.location.href='/'">

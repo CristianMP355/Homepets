@@ -17,7 +17,7 @@
   --shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.15);
   --shadow-card: 0 10px 25px rgba(0, 0, 0, 0.08);
   --shadow-hover: 0 16px 32px rgba(163, 104, 58, 0.14);
-  --font-main: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-main: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 /* Reset básico */
@@ -842,16 +842,7 @@ body {
   }
 }
 
-@media (min-width: 769px) {
-  .page,
-  .auth-page {
-    transform: scale(1);
-  }
-
-  .page {
-    max-width: 440px;
-  }
-}
+/* (El layout de escritorio está al final del archivo: "Escritorio / laptops") */
 
 @media (max-width: 480px) {
   body {
@@ -931,4 +922,625 @@ body {
   color: #666;
   user-select: none;
   z-index: 10;
+}
+
+/* =========================
+   Calendario interactivo
+========================= */
+
+.calendar-day.disponible {
+  background: #4CAF50;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.calendar-day.disponible:hover {
+  background: #3d9140;
+  transform: scale(1.1);
+}
+
+.calendar-day.no-disponible {
+  background: #ff6b6b;
+  color: #fff;
+  cursor: not-allowed;
+}
+
+.calendar-day.solicitada {
+  background: #ff9f43;
+  color: #fff;
+  cursor: not-allowed;
+}
+
+.calendar-day.pasado {
+  background: #e0dbd4;
+  color: #b0a99f;
+  cursor: not-allowed;
+}
+
+.calendar-day.selected-start,
+.calendar-day.selected-end {
+  background: #2d6e35;
+  color: #fff;
+  cursor: pointer;
+}
+
+.calendar-day.in-range {
+  background: #81c784;
+  color: #fff;
+  cursor: pointer;
+}
+
+.calendar-solicitar-info {
+  font-size: 0.85rem;
+  color: var(--text);
+  text-align: center;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.calendar-error-msg {
+  color: #e53935;
+  font-size: 0.82rem;
+  text-align: center;
+  margin: 6px 0 0;
+}
+/* =========================
+   Calendario: estados de reserva
+   Verde = disponible · Naranja = por confirmar · Rojo = ocupado
+========================= */
+
+.calendar-day.ocupada {
+  background: #e53935;
+  color: #fff;
+  cursor: not-allowed;
+}
+
+.calendar-day.solicitada {
+  background: #ffa726;
+}
+
+/* Día bloqueado por el propio anfitrión en su perfil (se puede desmarcar) */
+.calendar-day.bloqueada {
+  background: #e53935;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.calendar-day.bloqueada:hover {
+  background: #c62828;
+  transform: scale(1.1);
+}
+
+.calendar-legend {
+  margin: 10px 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.legend-dot.verde   { background: #4CAF50; }
+.legend-dot.naranja { background: #ffa726; }
+.legend-dot.rojo    { background: #e53935; }
+
+/* =========================
+   Solicitudes de reserva (vista del anfitrión)
+========================= */
+
+#solicitudes-recibidas {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.solicitud-item {
+  background: #fff;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.solicitud-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.88rem;
+  min-width: 0;
+}
+
+.solicitud-acciones {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.solicitud-acciones button {
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: #fff;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.solicitud-acciones button:hover { transform: translateY(-1px); }
+.solicitud-acciones button:disabled { opacity: 0.6; cursor: wait; }
+.btn-confirmar { background: #43a047; }
+.btn-rechazar  { background: #9e9e9e; }
+
+.estado-badge {
+  align-self: flex-start;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  color: #fff;
+}
+
+.estado-badge.naranja { background: #ffa726; }
+.estado-badge.rojo    { background: #e53935; }
+.estado-badge.gris    { background: #9e9e9e; }
+
+/* =========================
+   Formularios (perfil de anfitrión)
+========================= */
+
+.page-with-fixed-btn {
+  padding-bottom: 110px;
+}
+
+.form-avatar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.host-avatar-lg {
+  width: 110px;
+  height: 110px;
+}
+
+.chip.chip-inline {
+  flex: 0 0 auto;
+  padding: 10px 18px;
+}
+
+.form-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: #fff;
+  border-radius: var(--radius-md);
+  padding: 20px 18px;
+  box-shadow: var(--shadow-card);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group .field-label {
+  margin: 0;
+}
+
+.form-input {
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #e6dccf;
+  background: #fffdf9;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.form-input::placeholder { color: #c0b7ad; }
+
+.form-input:focus {
+  border-color: #ffb46a;
+  box-shadow: 0 0 0 3px rgba(255, 180, 106, 0.18);
+}
+
+.form-textarea {
+  min-height: 120px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.form-help {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.fechas-resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.fechas-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fecha-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px 6px 12px;
+  border-radius: var(--radius-pill);
+  background: #fdecea;
+  color: #c62828;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.fecha-chip button {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0 4px;
+}
+
+.file-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 18px;
+  border: 2px dashed #e6dccf;
+  border-radius: var(--radius-md);
+  background: #fffdf9;
+  cursor: pointer;
+  color: var(--brown);
+  font-weight: 600;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.file-drop:hover {
+  border-color: #ffb46a;
+  background: #fff6ec;
+}
+
+.file-drop small {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.photos-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.photos-preview img {
+  width: 90px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+/* Filas de tarjetas: scroll horizontal en móvil */
+.cards-row {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.pets-grid > .card {
+  margin-bottom: 12px;
+}
+
+/* =========================
+   Escritorio / laptops
+========================= */
+
+@media (min-width: 768px) {
+  body {
+    padding: 32px 24px;
+  }
+
+  .page {
+    max-width: 960px;
+    padding: 28px 32px 36px;
+  }
+
+  .page.page-with-fixed-btn {
+    padding-bottom: 110px;
+  }
+
+  /* Formularios y fichas simples: más anchos que un celular, pero legibles */
+  .page.page-narrow {
+    max-width: 760px;
+  }
+
+  .auth-page {
+    max-width: 520px;
+  }
+
+  /* Anfitriones de la comunidad: cuadrícula de 2 columnas */
+  .host-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    overflow: visible;
+  }
+
+  .host-grid > .card {
+    min-width: 0 !important;
+  }
+
+  /* Modal de mascotas: más ancho y en 2 columnas */
+  .calendar-box.pets-box {
+    max-width: 720px;
+    width: 92%;
+  }
+
+  .pets-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .pets-grid > .card {
+    margin-bottom: 0 !important;
+  }
+
+  .pets-grid > p {
+    grid-column: 1 / -1;
+  }
+
+  .calendar-box {
+    max-width: 420px;
+  }
+
+  .calendar-grid {
+    gap: 8px;
+    font-size: 0.88rem;
+  }
+
+  .calendar-day,
+  .calendar-weekday {
+    padding: 8px 0;
+  }
+
+  .host-hero {
+    max-height: 340px;
+  }
+
+  .form-card {
+    padding: 26px 28px;
+  }
+}
+
+@media (min-width: 1100px) {
+  .page {
+    max-width: 1100px;
+  }
+
+  /* 3 columnas de anfitriones y mascotas en pantallas grandes */
+  .host-grid,
+  .pets-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .calendar-box.pets-box {
+    max-width: 960px;
+  }
+}
+
+/* =========================
+   Layout web (barra superior + contenido amplio)
+   Usado por las páginas con <body class="app-body">
+========================= */
+
+body.app-body {
+  display: block;
+  padding: 0;
+  background: #f7f3ec;
+}
+
+.topnav {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line-soft);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.topnav a { text-decoration: none; }
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: #f4f1ea;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.nav-link:hover {
+  background: #efe5d6;
+  transform: translateY(-1px);
+}
+
+.nav-cta {
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, #ff8c61 0%, #d66d46 100%);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(214, 109, 70, 0.22);
+  transition: transform 0.18s ease;
+}
+
+.nav-cta:hover { transform: translateY(-1px); }
+
+.nav-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.hero-card {
+  background: linear-gradient(135deg, #fff3e2 0%, #ffe8c1 100%);
+}
+
+.section-title {
+  margin: 0 0 16px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.ver-perfil-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  padding: 5px 12px;
+  border: 1px solid #f0d9c2;
+  border-radius: var(--radius-pill);
+  background: #fff6ec;
+  color: var(--brown);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.ver-perfil-btn:hover { background: #ffe8c1; }
+
+.pet-tag {
+  flex: 0 0 auto;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: #eef4e5;
+  color: var(--green);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.required-mark {
+  margin-left: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #d84315;
+}
+
+.form-warning {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: #fff3e0;
+  border: 1px solid #ffcc80;
+  color: #bf360c;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Las páginas internas siguen usando .page, pero dentro del layout web */
+body.app-body .page {
+  margin: 20px auto 40px;
+}
+
+body.app-body .auth-page {
+  min-height: auto;
+}
+
+/* Los botones fijos no deben quedar por debajo de la barra superior */
+body.app-body .btn-primary[style*="position:fixed"] { z-index: 12; }
+
+@media (min-width: 768px) {
+  body.app-body .page {
+    max-width: 1200px;
+    margin: 32px auto 48px;
+    border-radius: 1rem;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+  }
+
+  body.app-body .page.page-narrow {
+    max-width: 860px;
+  }
+
+  body.app-body .auth-page {
+    max-width: 860px;
+    padding-top: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  body.app-body .page {
+    margin: 0;
+  }
+
+  .nav-link {
+    padding: 8px 11px;
+    font-size: 0.8rem;
+  }
+
+  .nav-avatar {
+    width: 34px;
+    height: 34px;
+  }
+
+  .topnav .app-title {
+    font-size: 1.05rem;
+  }
 }

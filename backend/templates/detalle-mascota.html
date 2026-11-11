@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <title>HuellaHome - Detalle mascota</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="/static/estilos.css">
+  {% include "base_head.html" %}
 </head>
-<body>
-  <main class="page">
+<body class="app-body">
+  {% include "base_navbar.html" %}
+  <main class="page page-narrow">
     <header class="app-header">
       <button class="back-btn" onclick="window.location.href='/'">←</button>
       <span class="app-title">Detalle mascota</span>
@@ -53,6 +53,12 @@
         const responsable = pet.responsable || {};
         const responsableNombre = responsable.nombre || 'No registrado';
 
+        let usuarioActual = null;
+        try { usuarioActual = JSON.parse(localStorage.getItem('usuarioActual')); } catch (e) {}
+        const esAdmin = !!(usuarioActual && usuarioActual.rol === 'admin');
+        const esDueno = !!(usuarioActual && Number(usuarioActual.id) === Number(pet.usuario_id));
+        const puedeEliminar = esAdmin || esDueno;
+
         container.innerHTML = `
           <section style="margin-bottom:16px;text-align:center;">
             <img src="${foto}" alt="Foto mascota"
@@ -95,8 +101,40 @@
             <p class="host-section-text">
               <strong>Nombre:</strong> ${responsableNombre}
             </p>
+            ${responsable.id ? `
+              <a href="/perfil-publico?id=${responsable.id}" class="ver-perfil-btn" style="margin-top:10px;display:inline-flex;">👤 Ver perfil del responsable</a>
+            ` : ""}
           </section>
+
+          ${puedeEliminar ? `
+            <div style="margin:16px 0;">
+              <button id="btn-eliminar-mascota" class="btn-primary" style="width:100%;background:#c0392b;">
+                🗑️ Eliminar mascota${esAdmin ? " (admin)" : ""}
+              </button>
+            </div>
+          ` : ""}
         `;
+
+        document.getElementById('btn-eliminar-mascota')?.addEventListener('click', async () => {
+          if (!confirm(`¿Eliminar definitivamente a "${pet.nombre || 'esta mascota'}"? Esta acción no se puede deshacer.`)) return;
+          try {
+            const resp = await fetch(`${API_BASE}/mascotas/${pet.id}`, {
+              method: 'DELETE',
+              headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+            });
+            const data = await resp.json().catch(() => ({}));
+            if (!resp.ok) {
+              alert(data.detail || 'No se pudo eliminar la mascota.');
+              return;
+            }
+            localStorage.removeItem('mascotaSeleccionada');
+            alert('Mascota eliminada correctamente.');
+            window.location.href = '/';
+          } catch (err) {
+            console.error('Error eliminando mascota:', err);
+            alert('Error de conexión al eliminar la mascota.');
+          }
+        });
 
       } catch (error) {
         console.error('Error cargando detalle de mascota:', error);
